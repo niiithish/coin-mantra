@@ -1,12 +1,12 @@
 import Header from "@/components/header";
 
-const DashboardPage = () => {
+const NewsPage = () => {
     return (
         <div>
             <Header />
-            <h1>Dashboard</h1>
+            <h1>News</h1>
         </div>
     );
 };
 
-export default DashboardPage;
+export default NewsPage;

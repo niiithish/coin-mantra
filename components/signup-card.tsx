@@ -27,16 +27,20 @@ import {
     ComboboxList,
 } from "@/components/ui/combobox"
 import countries from "world-countries"
+import { useState } from "react"
+import { HugeiconsIcon } from "@hugeicons/react";
+import { EyeIcon, EyeOff } from "@hugeicons/core-free-icons";
 
-// Create a lookup map for flags to keep the render fast
+
 const countryMap = new Map(
     countries.map((c) => [c.name.common, { flag: c.flag, code: c.cca3 }])
 );
 
-// Just a sorted list of names for the search engine
 const countryNames = Array.from(countryMap.keys()).sort();
 
 const SignUpForm = () => {
+
+    const [visible, setVisible] = useState(false);
 
     return (
         <Card className="ring-0 bg-transparent w-full max-w-[350px]">
@@ -71,7 +75,21 @@ const SignUpForm = () => {
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="password" >Password</FieldLabel>
-                            <Input id="password" name="password" type="password" required />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type={visible ? "text" : "password"}
+                                    required
+                                    className="pr-10"
+                                />
+                                <HugeiconsIcon
+                                    icon={visible ? EyeOff : EyeIcon}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground transition-all"
+                                    onClick={() => setVisible(!visible)}
+                                    size={16}
+                                />
+                            </div>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="country" >Country</FieldLabel>

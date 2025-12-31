@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -15,8 +16,14 @@ import {
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { signInAction } from "@/app/actions/auth"
+import { useState } from "react"
+import { EyeIcon, EyeOff } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 const LoginForm = () => {
+
+    const [visible, setVisible] = useState(false);
+
     return (
         <Card className="ring-0 flex flex-col gap-6 w-full max-w-[350px] justify-center bg-transparent">
             <CardHeader>
@@ -48,7 +55,15 @@ const LoginForm = () => {
                                     Forgot your password?
                                 </a>
                             </div>
-                            <Input id="password" name="password" type="password" required />
+                            <div className="relative">
+                                <Input id="password" name="password" type={visible ? "text" : "password"} required />
+                                <HugeiconsIcon
+                                    icon={visible ? EyeOff : EyeIcon}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground transition-all"
+                                    onClick={() => setVisible(!visible)}
+                                    size={16}
+                                />
+                            </div>
                         </Field>
                         <Field>
                             <Button type="submit">Login</Button>
