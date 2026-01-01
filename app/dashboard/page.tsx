@@ -1,9 +1,9 @@
 "use client";
 
-import HeatMap from "@/components/dashboard/heatmap";
-import MarketData from "@/components/dashboard/market-data";
-import MarketOverview from "@/components/dashboard/market-overview";
-import TopStories from "@/components/dashboard/top-stories";
+import HeatMap from "@/components/dashboardv2/heatmap";
+import MarketData from "@/components/dashboardv2/market-data";
+import MarketOverview from "@/components/dashboardv2/market-overview";
+import TopStories from "@/components/dashboardv2/top-stories";
 
 const DashboardPage = () => {
   return (
