@@ -6,10 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UnfoldMoreIcon, UserCircleIcon } from "@hugeicons/core-free-icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { usePathname } from 'next/navigation'
-
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const pathname = usePathname();
@@ -21,21 +24,32 @@ export default function Header() {
         <h1 className="text-xl font-bold">CoinWatch</h1>
       </Link>
       <div className="flex text-sm font-regular gap-[24px]">
-        <Link href="/dashboard" className={pathname === "/dashboard" ? "text-primary font-semibold" : ""}>
+        <Link
+          href="/dashboard"
+          className={
+            pathname === "/dashboard" ? "text-primary font-semibold" : ""
+          }
+        >
           Dashboard
         </Link>
         <Popover>
-          <PopoverTrigger className="cursor-pointer">
-            Search
-          </PopoverTrigger>
+          <PopoverTrigger className="cursor-pointer">Search</PopoverTrigger>
           <PopoverContent className="w-[400px] h-[200px] p-0">
             <Input />
           </PopoverContent>
         </Popover>
-        <Link href="/watchlist" className={pathname === "/watchlist" ? "text-primary font-semibold" : ""}>
+        <Link
+          href="/watchlist"
+          className={
+            pathname === "/watchlist" ? "text-primary font-semibold" : ""
+          }
+        >
           Watchlist
         </Link>
-        <Link href="/news" className={pathname === "/news" ? "text-primary font-semibold" : ""}>
+        <Link
+          href="/news"
+          className={pathname === "/news" ? "text-primary font-semibold" : ""}
+        >
           News
         </Link>
       </div>
@@ -45,7 +59,9 @@ export default function Header() {
             <Popover>
               <PopoverTrigger className="cursor-pointer flex gap-2 items-center justify-center">
                 <HugeiconsIcon icon={UserCircleIcon} size={24} />
-                <p className="flex text-sm font-regular">{session.user?.name}</p>
+                <p className="flex text-sm font-regular">
+                  {session.user?.name}
+                </p>
                 <HugeiconsIcon icon={UnfoldMoreIcon} size={16} />
               </PopoverTrigger>
               <PopoverContent>

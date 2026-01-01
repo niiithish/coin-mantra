@@ -125,3 +125,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* TradingView widget iframe transparency fix */
+.tradingview-widget-container iframe {
+  background: transparent !important;
+}

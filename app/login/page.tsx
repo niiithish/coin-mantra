@@ -30,7 +30,6 @@ const Login = async () => {
         </div>
       </div>
     </>
-
-  )
-}
+  );
+};
 export default Login;
