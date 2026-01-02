@@ -19,12 +19,13 @@ export async function GET(request: Request) {
     }
   });
 
-  const url = `https://api.coingecko.com/api/v3${endpoint}?${params.toString()}`;
+  const url = `https://api.coingecko.com/api/v3${endpoint}${params.toString() ? `?${params.toString()}` : ""}`;
 
   try {
     const response = await fetch(url, {
       headers: {
         Accept: "application/json",
+        "x-cg-demo-api-key": process.env.COINGECKO_API_KEY || "",
       },
       // Add cache control to help with rate limiting
       next: { revalidate: 60 }, // Cache for 60 seconds

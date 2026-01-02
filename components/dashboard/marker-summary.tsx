@@ -73,6 +73,12 @@ const MarkerSummary = () => {
         );
         const result = await response.json();
 
+        // Validate that result.prices exists before mapping
+        if (!result.prices || !Array.isArray(result.prices)) {
+          console.error("API returned unexpected response:", result);
+          return;
+        }
+
         let labels = result.prices.map((item: [number, number]) => {
           const date = new Date(item[0]);
           return date.toLocaleDateString("en-US", {
@@ -149,10 +155,10 @@ const MarkerSummary = () => {
               <div className="flex">
                 <LineChart className="h-52 w-full" data={chartData} />
               </div>
-              <div className="flex items-center justify-between gap-5">
+              <div className="flex items-stretch justify-between gap-5">
                 {coins.map((item: Coin) => (
                   <Card
-                    className={`w-full cursor-pointer border-0 ${item.id === coin ? "bg-secondary/20 shadow-sm" : ""}`}
+                    className={`h-full w-full cursor-pointer border-0 ${item.id === coin ? "bg-secondary/20 shadow-sm" : ""}`}
                     key={item.id}
                     onClick={() => {
                       setCoin(item.id);
@@ -164,9 +170,10 @@ const MarkerSummary = () => {
                           alt={item.name}
                           height={20}
                           src={item.image}
+                          style={{ height: "auto" }}
                           width={20}
                         />
-                        <p>{item.name}</p>
+                        <p className="truncate max-w-[100px]">{item.name}</p>
                       </div>
                       <Badge className="uppercase" variant="secondary">
                         {item.symbol}

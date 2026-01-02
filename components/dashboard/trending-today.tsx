@@ -87,6 +87,7 @@ const TrendingToday = () => {
                         className="rounded-full"
                         height={24}
                         src={coin.item.small}
+                        style={{ height: "auto" }}
                         width={24}
                       />
                       {coin.item.name}
@@ -109,7 +110,7 @@ const TrendingToday = () => {
                       className="rounded-full"
                       height={120}
                       src={coin.item.data.sparkline}
-                      style={{ height: "auto" }}
+                      style={{ width: "auto", height: "auto" }}
                       width={120}
                     />
                   </TableCell>
