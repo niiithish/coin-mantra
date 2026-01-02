@@ -46,13 +46,17 @@ export function LineChart({
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) return;
+    if (!chart) {
+      return;
+    }
 
     // Create gradient
     const ctx = chart.ctx;
     const chartArea = chart.chartArea;
 
-    if (!chartArea) return;
+    if (!chartArea) {
+      return;
+    }
 
     const gradient = ctx.createLinearGradient(
       0,

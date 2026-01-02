@@ -3,8 +3,8 @@
 import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -15,7 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner"
 import { Badge } from "../ui/badge";
 
 interface CoinData {
@@ -23,12 +22,12 @@ interface CoinData {
   symbol: string;
   name: string;
   image?:
-  | {
-    thumb?: string;
-    small?: string;
-    large?: string;
-  }
-  | string;
+    | {
+        thumb?: string;
+        small?: string;
+        large?: string;
+      }
+    | string;
   market_data?: {
     current_price?: {
       usd?: number;
@@ -70,10 +69,8 @@ const Watchlist = () => {
     return "";
   };
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newCoinId, setNewCoinId] = useState("");
-  const [addingCoin, setAddingCoin] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,37 +79,40 @@ const Watchlist = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced search function
-  const searchCoins = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `/api/coingecko?endpoint=/search&query=${encodeURIComponent(query)}`
-      );
-
-      if (!response.ok) {
-        console.error("Search failed:", response.statusText);
+  const searchCoins = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
         setSearchResults([]);
         return;
       }
 
-      const data: SearchResponse = await response.json();
-      // Filter out coins already in watchlist
-      const filteredCoins = data.coins.filter(
-        (coin) => !watchlistItems.some((item) => item.coinId === coin.id)
-      );
-      setSearchResults(filteredCoins.slice(0, 10)); // Limit to 10 results
-    } catch (error) {
-      console.error("Error searching coins:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [watchlistItems]);
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/coingecko?endpoint=/search&query=${encodeURIComponent(query)}`
+        );
+
+        if (!response.ok) {
+          console.error("Search failed:", response.statusText);
+          setSearchResults([]);
+          return;
+        }
+
+        const data: SearchResponse = await response.json();
+        // Filter out coins already in watchlist
+        const filteredCoins = data.coins.filter(
+          (coin) => !watchlistItems.some((item) => item.coinId === coin.id)
+        );
+        setSearchResults(filteredCoins.slice(0, 10)); // Limit to 10 results
+      } catch (error) {
+        console.error("Error searching coins:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [watchlistItems]
+  );
 
   // Handle search input with debounce
   const handleSearchChange = (value: string) => {
@@ -129,7 +129,7 @@ const Watchlist = () => {
     }, 300);
   };
 
-  const fetchWatchlist = async () => {
+  const fetchWatchlist = useCallback(async () => {
     try {
       const response = await fetch("/api/watchlist");
       const items: WatchlistItem[] = await response.json();
@@ -137,16 +137,14 @@ const Watchlist = () => {
     } catch (error) {
       console.error("Error fetching watchlist:", error);
     }
-  };
+  }, []);
 
-  const fetchCoinDetails = async () => {
+  const fetchCoinDetails = useCallback(async () => {
     if (watchlistItems.length === 0) {
       setCoins([]);
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
     const coinPromises = watchlistItems.map(async (item) => {
       try {
         const response = await fetch(
@@ -184,26 +182,23 @@ const Watchlist = () => {
         coin.market_data?.current_price?.usd !== undefined
     );
     setCoins(validCoins);
-    setLoading(false);
-  };
+  }, [watchlistItems]);
 
   useEffect(() => {
     fetchWatchlist();
-  }, []);
+  }, [fetchWatchlist]);
 
   useEffect(() => {
     if (watchlistItems.length > 0) {
       fetchCoinDetails();
-    } else {
-      setLoading(false);
     }
-  }, [watchlistItems]);
+  }, [watchlistItems, fetchCoinDetails]);
 
   const handleAddCoin = async (coinId?: string) => {
     const idToAdd = coinId || newCoinId;
-    if (!idToAdd.trim()) return;
-
-    setAddingCoin(true);
+    if (!idToAdd.trim()) {
+      return;
+    }
     try {
       const response = await fetch("/api/watchlist", {
         method: "POST",
@@ -224,7 +219,7 @@ const Watchlist = () => {
       console.error("Error adding coin:", error);
       toast.error("Error adding coin to watchlist.");
     } finally {
-      setAddingCoin(false);
+      // Done adding
     }
   };
 
@@ -268,7 +263,7 @@ const Watchlist = () => {
   return (
     <Card className="grid h-full grid-cols-3 items-start gap-4 p-4">
       {coins.map((coin) => (
-        <Card key={coin.id} className="bg-secondary/20">
+        <Card className="bg-secondary/20" key={coin.id}>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
               <div className="rounded-sm">
@@ -283,7 +278,14 @@ const Watchlist = () => {
               </div>
               <div className="flex gap-2">
                 <div className="rounded-full">
-                  <HugeiconsIcon className="cursor-pointer" icon={StarIcon} size={20} fill="#63a401" color="#63a401" onClick={() => handleRemoveCoin(coin.id)} />
+                  <HugeiconsIcon
+                    className="cursor-pointer"
+                    color="#63a401"
+                    fill="#63a401"
+                    icon={StarIcon}
+                    onClick={() => handleRemoveCoin(coin.id)}
+                    size={20}
+                  />
                 </div>
               </div>
             </div>
@@ -303,11 +305,16 @@ const Watchlist = () => {
                   className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
                 >
                   <span>
-                    {coin.market_data.price_change_percentage_24h > 0 ? "+" : ""}
+                    {coin.market_data.price_change_percentage_24h > 0
+                      ? "+"
+                      : ""}
                     {coin.market_data.price_change_24h?.toFixed(2)}
                   </span>
                   <span className="opacity-90">
-                    ({coin.market_data.price_change_percentage_24h > 0 ? "+" : ""}
+                    (
+                    {coin.market_data.price_change_percentage_24h > 0
+                      ? "+"
+                      : ""}
                     {coin.market_data.price_change_percentage_24h.toFixed(2)}%)
                   </span>
                 </div>
@@ -318,7 +325,7 @@ const Watchlist = () => {
       ))}
       {watchlistItems.length < 6 && (
         <Dialog onOpenChange={handleDialogOpenChange} open={dialogOpen}>
-          <DialogTrigger className="cursor-pointer rounded-sm bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 transition-colors">
+          <DialogTrigger className="cursor-pointer rounded-sm bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90">
             Add Coin
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
@@ -337,9 +344,9 @@ const Watchlist = () => {
                   placeholder="Search coins (e.g., Bitcoin, Ethereum, Solana)"
                   value={searchQuery}
                 />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <div className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
                   {isSearching ? (
-                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   ) : (
                     <HugeiconsIcon icon={Search01Icon} size={14} />
                   )}
@@ -348,12 +355,12 @@ const Watchlist = () => {
 
               {/* Search Results */}
               {searchResults.length > 0 && (
-                <div className="max-h-64 overflow-y-auto rounded-sm gap-2">
+                <div className="max-h-64 gap-2 overflow-y-auto rounded-sm">
                   {searchResults.map((coin) => (
                     <Card
+                      className="cursor-pointer rounded-none"
                       key={coin.id}
                       onClick={() => handleAddCoin(coin.id)}
-                      className="cursor-pointer rounded-none"
                     >
                       <CardContent className="flex gap-4">
                         <Image
@@ -363,11 +370,11 @@ const Watchlist = () => {
                           src={coin.large}
                           width={34}
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-foreground truncate">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-foreground">
                             {coin.name}
                           </div>
-                          <div className="text-xs text-muted-foreground uppercase">
+                          <div className="text-muted-foreground text-xs uppercase">
                             {coin.symbol}
                           </div>
                         </div>
@@ -384,13 +391,14 @@ const Watchlist = () => {
 
               {/* Empty State */}
               {searchQuery && !isSearching && searchResults.length === 0 && (
-                <div className="text-center py-4 text-muted-foreground text-sm">
+                <div className="py-4 text-center text-muted-foreground text-sm">
                   No coins found for &quot;{searchQuery}&quot;
                 </div>
               )}
             </div>
           </DialogContent>
-        </Dialog>)}
+        </Dialog>
+      )}
     </Card>
   );
 };

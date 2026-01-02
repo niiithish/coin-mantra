@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -30,10 +31,10 @@ const FinancialNews = () => {
     <div className="max-h-[60vh] overflow-y-scroll">
       <Card>
         <CardContent className="flex flex-col gap-3">
-          {news.map((item, index) => (
+          {news.map((item) => (
             <div
               className="flex flex-col gap-2 border-foreground/20 border-b py-2"
-              key={index}
+              key={item.url}
             >
               <div className="flex flex-row justify-start gap-5">
                 <p className="text-muted-foreground text-xs">
@@ -49,17 +50,24 @@ const FinancialNews = () => {
                 </p>
               </div>
               <div className="flex flex-row items-center justify-between gap-2">
-                <h2
+                <a
                   className="cursor-pointer font-medium text-sm hover:underline"
-                  onClick={() => window.open(item.url, "_blank")}
+                  href={item.url}
+                  rel="noreferrer"
+                  target="_blank"
                 >
                   {item.title}
-                </h2>
-                <img
-                  alt={item.title}
-                  className="h-20 w-32 rounded-sm object-cover"
-                  src={item.urlToImage}
-                />
+                </a>
+                {item.urlToImage && (
+                  <Image
+                    alt={item.title}
+                    className="h-20 w-32 rounded-sm object-cover"
+                    height={80}
+                    src={item.urlToImage}
+                    unoptimized
+                    width={128}
+                  />
+                )}
               </div>
             </div>
           ))}

@@ -74,7 +74,7 @@ const MarkerSummary = () => {
         const result = await response.json();
 
         // Validate that result.prices exists before mapping
-        if (!result.prices || !Array.isArray(result.prices)) {
+        if (!(result.prices && Array.isArray(result.prices))) {
           console.error("API returned unexpected response:", result);
           return;
         }
@@ -90,10 +90,7 @@ const MarkerSummary = () => {
         let prices = result.prices.map((item: [number, number]) => item[1]);
 
         // Remove last data point if it has same date as previous (API returns duplicate for current day)
-        if (
-          labels.length > 1 &&
-          labels[labels.length - 1] === labels[labels.length - 2]
-        ) {
+        if (labels.length > 1 && labels.at(-1) === labels.at(-2)) {
           labels = labels.slice(0, -1);
           prices = prices.slice(0, -1);
         }
@@ -173,7 +170,7 @@ const MarkerSummary = () => {
                           style={{ height: "auto" }}
                           width={20}
                         />
-                        <p className="truncate max-w-[100px]">{item.name}</p>
+                        <p className="max-w-[100px] truncate">{item.name}</p>
                       </div>
                       <Badge className="uppercase" variant="secondary">
                         {item.symbol}
