@@ -16,14 +16,29 @@ interface News {
 
 const FinancialNews = () => {
   const [news, setNews] = useState<News[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNews = async () => {
-      const response = await fetch(
-        "https://newsapi.org/v2/everything?q=crypto&pageSize=10&apiKey=af434bb97adf42e98541c390110e0201"
-      );
-      const data = await response.json();
-      setNews(data.articles);
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch("/api/newsapi");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch news");
+        }
+
+        setNews(data.articles || []);
+      } catch (err) {
+        console.error("Error fetching news:", err);
+        setError(err instanceof Error ? err.message : "Failed to load news");
+        setNews([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchNews();
   }, []);
@@ -31,7 +46,22 @@ const FinancialNews = () => {
     <div className="max-h-[60vh] overflow-y-scroll">
       <Card>
         <CardContent className="flex flex-col gap-3">
-          {news.map((item) => (
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground text-sm">Loading news...</p>
+            </div>
+          )}
+          {error && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
+          {!isLoading && !error && news.length === 0 && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground text-sm">No news available</p>
+            </div>
+          )}
+          {!isLoading && !error && news.map((item) => (
             <div
               className="flex flex-col gap-2 border-foreground/20 border-b py-2"
               key={item.url}
