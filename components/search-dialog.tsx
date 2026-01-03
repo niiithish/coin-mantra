@@ -2,12 +2,12 @@
 
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 
 interface SearchCoin {
@@ -49,6 +49,8 @@ interface CoinResult {
 }
 
 const SearchDialog = () => {
+    const router = useRouter();
+    const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [results, setResults] = useState<CoinResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -128,9 +130,9 @@ const SearchDialog = () => {
     }, [fetchTrending]);
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger className="cursor-pointer">Search</DialogTrigger>
-            <DialogContent showCloseButton={false} className="p-0 gap-0 min-w-xl overflow-hidden">
+            <DialogContent showCloseButton={false} className="p-0 gap-0 min-w-lg overflow-hidden">
                 <DialogTitle className="sr-only">Search Coins</DialogTitle>
                 <DialogHeader className="px-4 py-4 bg-card">
                     <div className="flex items-center gap-3">
@@ -146,21 +148,24 @@ const SearchDialog = () => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
                             autoFocus
                         />
-                        <DialogClose>
+                        <DialogClose className="cursor-pointer" >
                             <HugeiconsIcon icon={Cancel01Icon} size={22} className="text-muted-foreground" />
                         </DialogClose>
                     </div>
                 </DialogHeader>
 
                 <div className="bg-card">
-
                     <div className="max-h-[40vh] overflow-y-auto">
                         {results.length > 0 ? (
                             <div className="flex flex-col">
                                 {results.map((coin) => (
                                     <div
                                         key={coin.id}
-                                        className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-default group"
+                                        className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer group"
+                                        onClick={() => {
+                                            router.push(`/coin/${coin.id}`);
+                                            setOpen(false);
+                                        }}
                                     >
                                         <div className="relative w-8 h-8 flex-shrink-0">
                                             <Image
@@ -170,31 +175,16 @@ const SearchDialog = () => {
                                                 className="rounded-full object-contain"
                                             />
                                         </div>
-                                        <div className="flex flex-col flex-1 min-w-0">
+                                        <div className="flex flex-col flex-1 gap-1">
                                             <span className="font-medium text-sm truncate uppercase">{coin.name}</span>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3 min-w-[140px] justify-between max-w-[140px]">
                                                 <span className="text-xs text-muted-foreground truncate">{coin.symbol}</span>
-                                                <p className="text-sm">•</p>
-                                                <span className="text-xs text-muted-foreground truncate">{coin.rank}</span>
-                                                {coin.price_change_percentage_24h !== undefined && (
-                                                    <>
-                                                        <p className="text-sm">•</p>
-                                                        <span className={cn(
-                                                            "text-xs truncate font-medium",
-                                                            coin.price_change_percentage_24h >= 0 ? "text-green-500" : "text-red-500"
-                                                        )}>
-                                                            {coin.price_change_percentage_24h >= 0 ? "+" : ""}
-                                                            {coin.price_change_percentage_24h.toFixed(2)}%
-                                                        </span>
-                                                    </>
-                                                )}
+                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                                                    Rank: #{coin.rank}
+                                                </Badge>
                                             </div>
                                         </div>
-                                        {coin.rank && (
-                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                                #{coin.rank}
-                                            </Badge>
-                                        )}
+                                        <HugeiconsIcon icon={StarIcon} size={20} className="text-muted-foreground" />
                                     </div>
                                 ))}
                             </div>
