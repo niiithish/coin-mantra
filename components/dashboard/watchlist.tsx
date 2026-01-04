@@ -244,167 +244,169 @@ const Watchlist = () => {
           View All
         </Button>
       </div>
-      <Card className="grid flex-1 min-h-0 grid-cols-3 items-start gap-4 p-4">
-        {coins.map((coin) => (
-          <Card
-            className="bg-secondary/20"
-            key={coin.id}
-            onClick={() => {
-              router.push(`/coin/${coin.id}`);
-            }}
-          >
-            <CardContent className="flex flex-col gap-4 cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div className="rounded-sm">
-                  <Image
-                    alt={coin.name}
-                    className="rounded-sm"
-                    height={32}
-                    src={getImageUrl(coin)}
-                    style={{ height: "auto" }}
-                    width={32}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <div className="rounded-full">
-                    <HugeiconsIcon
-                      className="cursor-pointer"
-                      color="#63a401"
-                      fill="#63a401"
-                      icon={StarIcon}
-                      onClick={() => handleRemoveCoin(coin.id)}
-                      size={20}
+      <Card className="flex-1 min-h-0 !flex-row !flex-wrap items-start content-start gap-4 p-4 overflow-auto">
+        <div className="grid grid-cols-3 gap-4 w-full">
+          {coins.map((coin) => (
+            <Card
+              className="bg-secondary/20"
+              key={coin.id}
+              onClick={() => {
+                router.push(`/coin/${coin.id}`);
+              }}
+            >
+              <CardContent className="flex flex-col gap-4 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-sm">
+                    <Image
+                      alt={coin.name}
+                      className="rounded-sm"
+                      height={32}
+                      src={getImageUrl(coin)}
+                      style={{ height: "auto" }}
+                      width={32}
                     />
                   </div>
+                  <div className="flex gap-2">
+                    <div className="rounded-full">
+                      <HugeiconsIcon
+                        className="cursor-pointer"
+                        color="#63a401"
+                        fill="#63a401"
+                        icon={StarIcon}
+                        onClick={() => handleRemoveCoin(coin.id)}
+                        size={20}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-regular text-foreground/80 text-xs">
-                  {coin.name}
-                </h3>
-                {coin.market_data?.current_price?.usd ? (
-                  <div className="font-semibold text-xl">
-                    ${coin.market_data.current_price.usd.toFixed(2)}
-                  </div>
-                ) : null}
-                {coin.market_data?.price_change_percentage_24h !== undefined ? (
-                  <div
-                    className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
-                  >
-                    <span>
-                      {coin.market_data.price_change_percentage_24h > 0
-                        ? "+"
-                        : ""}
-                      {coin.market_data.price_change_24h?.toFixed(2)}
-                    </span>
-                    <span className="opacity-90">
-                      (
-                      {coin.market_data.price_change_percentage_24h > 0
-                        ? "+"
-                        : ""}
-                      {coin.market_data.price_change_percentage_24h.toFixed(2)}%)
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {watchlistItems.length < 6 && (
-          <Dialog onOpenChange={handleDialogOpenChange} open={dialogOpen}>
-            <DialogTrigger>
-              <Card className="group cursor-pointer bg-secondary/20 border-dashed border-2 border-muted-foreground/30 hover:border-primary/50 hover:bg-secondary/40 transition-all duration-300">
-                <CardContent className="flex flex-col items-center justify-center gap-3 h-full min-h-[140px]">
-                  <div className="rounded-full border p-4">
-                    <svg
-                      className="h-8 w-8 text-primary/70"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-regular text-foreground/80 text-xs">
+                    {coin.name}
+                  </h3>
+                  {coin.market_data?.current_price?.usd ? (
+                    <div className="font-semibold text-xl">
+                      ${coin.market_data.current_price.usd.toFixed(2)}
+                    </div>
+                  ) : null}
+                  {coin.market_data?.price_change_percentage_24h !== undefined ? (
+                    <div
+                      className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-foreground/80">Add Coin</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add to Watchlist</DialogTitle>
-                <DialogDescription>
-                  Search for a cryptocurrency to add to your watchlist
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col gap-4">
-                {/* Search Input */}
-                <div className="relative">
-                  <Input
-                    className="pl-10"
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    placeholder="Search coins (e.g., Bitcoin, Ethereum, Solana)"
-                    value={searchQuery}
-                  />
-                  <div className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
-                    {isSearching ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    ) : (
-                      <HugeiconsIcon icon={Search01Icon} size={14} />
-                    )}
-                  </div>
+                      <span>
+                        {coin.market_data.price_change_percentage_24h > 0
+                          ? "+"
+                          : ""}
+                        {coin.market_data.price_change_24h?.toFixed(2)}
+                      </span>
+                      <span className="opacity-90">
+                        (
+                        {coin.market_data.price_change_percentage_24h > 0
+                          ? "+"
+                          : ""}
+                        {coin.market_data.price_change_percentage_24h.toFixed(2)}%)
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
-
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                  <div className="max-h-64 gap-2 overflow-y-auto rounded-sm">
-                    {searchResults.map((coin) => (
-                      <Card
-                        className="cursor-pointer rounded-none"
-                        key={coin.id}
-                        onClick={() => handleAddCoin(coin.id)}
+              </CardContent>
+            </Card>
+          ))}
+          {watchlistItems.length < 6 && (
+            <Dialog onOpenChange={handleDialogOpenChange} open={dialogOpen}>
+              <DialogTrigger>
+                <Card className="group cursor-pointer bg-secondary/20 border-dashed border-2 border-muted-foreground/30 hover:border-primary/50 hover:bg-secondary/40 transition-all duration-300">
+                  <CardContent className="flex flex-col items-center justify-center gap-3 h-full min-h-[140px]">
+                    <div className="rounded-full border p-4">
+                      <svg
+                        className="h-8 w-8 text-primary/70"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
                       >
-                        <CardContent className="flex gap-4">
-                          <Image
-                            alt={coin.name}
-                            className="rounded-full"
-                            height={24}
-                            src={coin.large}
-                            width={34}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate font-medium text-foreground">
-                              {coin.name}
-                            </div>
-                            <div className="text-muted-foreground text-xs uppercase">
-                              {coin.symbol}
-                            </div>
-                          </div>
-                          {coin.market_cap_rank && (
-                            <Badge variant="outline">
-                              #{coin.market_cap_rank}
-                            </Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-foreground/80">Add Coin</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add to Watchlist</DialogTitle>
+                  <DialogDescription>
+                    Search for a cryptocurrency to add to your watchlist
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Input
+                      className="pl-10"
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Search coins (e.g., Bitcoin, Ethereum, Solana)"
+                      value={searchQuery}
+                    />
+                    <div className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
+                      {isSearching ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      ) : (
+                        <HugeiconsIcon icon={Search01Icon} size={14} />
+                      )}
+                    </div>
                   </div>
-                )}
 
-                {/* Empty State */}
-                {searchQuery && !isSearching && searchResults.length === 0 && (
-                  <div className="py-4 text-center text-muted-foreground text-sm">
-                    No coins found for &quot;{searchQuery}&quot;
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+                  {/* Search Results */}
+                  {searchResults.length > 0 && (
+                    <div className="max-h-64 gap-2 overflow-y-auto rounded-sm">
+                      {searchResults.map((coin) => (
+                        <Card
+                          className="cursor-pointer rounded-none"
+                          key={coin.id}
+                          onClick={() => handleAddCoin(coin.id)}
+                        >
+                          <CardContent className="flex gap-4">
+                            <Image
+                              alt={coin.name}
+                              className="rounded-full"
+                              height={24}
+                              src={coin.large}
+                              width={34}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-medium text-foreground">
+                                {coin.name}
+                              </div>
+                              <div className="text-muted-foreground text-xs uppercase">
+                                {coin.symbol}
+                              </div>
+                            </div>
+                            {coin.market_cap_rank && (
+                              <Badge variant="outline">
+                                #{coin.market_cap_rank}
+                              </Badge>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {searchQuery && !isSearching && searchResults.length === 0 && (
+                    <div className="py-4 text-center text-muted-foreground text-sm">
+                      No coins found for &quot;{searchQuery}&quot;
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </Card>
     </div>
   );
