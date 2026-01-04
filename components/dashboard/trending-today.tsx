@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -11,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
 
 interface TrendingCoinItem {
   id: string;
@@ -65,65 +65,76 @@ const TrendingToday = () => {
   }, []);
 
   return (
-    <Card className="overflow-y-scroll">
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Symbol</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>24h Change</TableHead>
-              <TableHead>24 Chart</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {trending.map((coin) => (
-              <TableRow className="text-sm" key={coin.item.id}>
-                <TableCell className="align-center">
-                  <Link href={`/coin/${coin.item.slug}`}>
-                    <div className="flex flex-row items-center gap-2">
-
-                      <Image
-                        alt={coin.item.name}
-                        className="rounded-full"
-                        height={24}
-                        src={coin.item.small}
-                        style={{ height: "auto" }}
-                        width={24}
-                      />
-                      <p className="hover:underline">{coin.item.name}</p>
-                    </div>
-
-                  </Link>
-                </TableCell>
-                <TableCell className="align-center">
-                  {coin.item.symbol}
-                </TableCell>
-                <TableCell className="align-center">
-                  ${coin.item.data.price.toFixed(2)}
-                </TableCell>
-                <TableCell
-                  className={`align-center ${coin.item.data.price_change_percentage_24h.usd > 0 ? "text-green-500" : "text-red-500"}`}
-                >
-                  {coin.item.data.price_change_percentage_24h.usd.toFixed(2)}%
-                </TableCell>
-                <TableCell className="align-center w-full">
-                  <Image
-                    alt={coin.item.name}
-                    className="rounded-full"
-                    height={120}
-                    src={coin.item.data.sparkline}
-                    style={{ width: "auto", height: "auto" }}
-                    width={120}
-                  />
-                </TableCell>
+    <div className="flex flex-col gap-4 w-full h-full">
+      <div className="flex flex-row items-center justify-between">
+        <h1 className="text-lg font-bold">Trending Today</h1>
+      </div>
+      <Card className="flex-1 min-h-0 overflow-y-auto px-0 py-0 w-full">
+        <CardContent className="px-0 py-0 w-full">
+          <Table>
+            <TableHeader className="bg-secondary/20">
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Symbol</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>24h Change</TableHead>
+                <TableHead>24 Chart</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {trending.map((coin) => (
+                <TableRow className="text-sm" key={coin.item.id}>
+                  <TableCell className="align-center max-w-[150px]">
+                    <Link href={`/coin/${coin.item.slug}`}>
+                      <div className="flex flex-row items-center gap-2">
+                        <Image
+                          alt={coin.item.name}
+                          className="rounded-full flex-shrink-0"
+                          height={24}
+                          src={coin.item.small}
+                          style={{ height: "auto" }}
+                          width={24}
+                        />
+                        <p
+                          className="hover:underline whitespace-nowrap overflow-hidden"
+                          style={{
+                            maskImage: "linear-gradient(to right, black 80%, transparent 100%)",
+                            WebkitMaskImage: "linear-gradient(to right, black 80%, transparent 100%)",
+                          }}
+                        >
+                          {coin.item.name}
+                        </p>
+                      </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="align-center">
+                    {coin.item.symbol}
+                  </TableCell>
+                  <TableCell className="align-center">
+                    ${coin.item.data.price.toFixed(2)}
+                  </TableCell>
+                  <TableCell
+                    className={`align-center ${coin.item.data.price_change_percentage_24h.usd > 0 ? "text-green-500" : "text-red-500"}`}
+                  >
+                    {coin.item.data.price_change_percentage_24h.usd.toFixed(2)}%
+                  </TableCell>
+                  <TableCell className="align-center">
+                    <Image
+                      alt={coin.item.name}
+                      className="rounded-full"
+                      height={120}
+                      src={coin.item.data.sparkline}
+                      style={{ width: "auto", height: "auto" }}
+                      width={120}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -26,21 +26,25 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-GB'); // Format as DD/MM/YYYY
+      return date.toLocaleDateString("en-GB"); // Format as DD/MM/YYYY
     } catch (err) {
       console.error("Error formatting date:", err);
-      return dateString.split('T')[0]; // Fallback to original format
+      return dateString.split("T")[0]; // Fallback to original format
     }
   };
 
   useEffect(() => {
-    if (coinName === undefined) return; // Wait for coinData to be available
+    if (coinName === undefined) {
+      return; // Wait for coinData to be available
+    }
 
     const fetchNews = async () => {
       try {
         setError(null);
         const query = coinName ? encodeURIComponent(coinName) : "crypto";
-        const response = await fetch(`/api/newsapi?q=${query}-crypto`, { cache: 'no-store' });
+        const response = await fetch(`/api/newsapi?q=${query}-crypto`, {
+          cache: "no-store",
+        });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -58,7 +62,6 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
     fetchNews();
   }, [coinName]);
 
-
   // Show error state
   if (error) {
     return (
@@ -75,7 +78,7 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
   // Show empty state
   if (news.length === 0) {
     return (
-      <Card className="overflow-y-scroll h-full">
+      <Card className="h-full overflow-y-scroll">
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-center justify-center py-8">
             <p className="text-muted-foreground text-sm">No news available</p>
@@ -86,9 +89,9 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
   }
 
   return (
-    <Card className="overflow-y-scroll h-full">
+    <Card className="h-full overflow-y-scroll">
       <CardContent className="flex flex-col gap-3">
-        {news.map((item) => (
+        {news.map((item) =>
           item.urlToImage ? (
             <div
               className="flex flex-col gap-2 border-foreground/20 border-b py-1"
@@ -114,7 +117,7 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
                 </a>
                 {item.urlToImage && (
                   <Image
-                    alt={item.title}
+                    alt="No Image"
                     className="h-16 w-24 rounded-sm object-cover"
                     height={64}
                     src={item.urlToImage}
@@ -124,7 +127,8 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
                 )}
               </div>
             </div>
-          ) : null))}
+          ) : null
+        )}
       </CardContent>
     </Card>
   );

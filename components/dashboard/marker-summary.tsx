@@ -117,7 +117,10 @@ const MarkerSummary = () => {
   }, [coin]);
 
   return (
-    <div className="flex w-full flex-1">
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex flex-row items-center justify-between">
+        <h1 className="text-lg font-bold">Market Summary</h1>
+      </div>
       <Card className="w-full">
         <CardHeader>
           <Tabs value={id}>

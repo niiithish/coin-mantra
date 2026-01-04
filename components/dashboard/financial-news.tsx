@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import router from "next/router";
 
 interface News {
   source: {
@@ -39,60 +41,68 @@ const FinancialNews = () => {
     fetchNews();
   }, []);
   return (
-    <Card className="overflow-y-scroll">
-      <CardContent className="flex flex-col gap-3">
-        {error && (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-destructive text-sm">{error}</p>
-          </div>
-        )}
-        {news.length === 0 && (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground text-sm">No news available</p>
-          </div>
-        )}
-        {news.map((item) => (
-          <div
-            className="flex flex-col gap-2 border-foreground/20 border-b py-2"
-            key={item.url}
-          >
-            <div className="flex flex-row justify-start gap-5">
-              <p className="text-muted-foreground text-xs">
-                {item.source.name}
-              </p>
-              <p className="text-muted-foreground text-xs"> • </p>
-              <p className="text-muted-foreground text-xs">
-                {item.publishedAt.split("T")[0].split("-")[2] +
-                  "/" +
-                  item.publishedAt.split("T")[0].split("-")[1] +
-                  "/" +
-                  item.publishedAt.split("T")[0].split("-")[0]}
-              </p>
+    <div className="flex flex-col gap-4 w-full h-full">
+      <div className="flex flex-row items-center justify-between">
+        <h1 className="text-lg font-bold">Today's Financial News</h1>
+        <Button variant="link" onClick={() => router.push("/news")}>
+          View All
+        </Button>
+      </div>
+      <Card className="flex-1 min-h-0 overflow-y-auto">
+        <CardContent className="flex flex-col gap-3">
+          {error && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-destructive text-sm">{error}</p>
             </div>
-            <div className="flex flex-row items-center justify-between gap-2">
-              <a
-                className="cursor-pointer font-medium text-sm hover:underline"
-                href={item.url}
-                rel="noreferrer"
-                target="_blank"
-              >
-                {item.title}
-              </a>
-              {item.urlToImage && (
-                <Image
-                  alt={item.title}
-                  className="h-20 w-32 rounded-sm object-cover"
-                  height={80}
-                  src={item.urlToImage}
-                  unoptimized
-                  width={128}
-                />
-              )}
+          )}
+          {news.length === 0 && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground text-sm">No news available</p>
             </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          )}
+          {news.map((item) => (
+            <div
+              className="flex flex-col gap-2 border-foreground/20 border-b py-2"
+              key={item.url}
+            >
+              <div className="flex flex-row justify-start gap-5">
+                <p className="text-muted-foreground text-xs">
+                  {item.source.name}
+                </p>
+                <p className="text-muted-foreground text-xs"> • </p>
+                <p className="text-muted-foreground text-xs">
+                  {item.publishedAt.split("T")[0].split("-")[2] +
+                    "/" +
+                    item.publishedAt.split("T")[0].split("-")[1] +
+                    "/" +
+                    item.publishedAt.split("T")[0].split("-")[0]}
+                </p>
+              </div>
+              <div className="flex flex-row items-center justify-between gap-2">
+                <a
+                  className="cursor-pointer font-medium text-sm hover:underline"
+                  href={item.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {item.title}
+                </a>
+                {item.urlToImage && (
+                  <Image
+                    alt={item.title}
+                    className="h-20 w-32 rounded-sm object-cover"
+                    height={80}
+                    src={item.urlToImage}
+                    unoptimized
+                    width={128}
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -5,8 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOutAction } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
 import SearchDialog from "@/components/search-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,

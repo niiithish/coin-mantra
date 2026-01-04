@@ -133,7 +133,9 @@ export function LineChart({
           maxTicksLimit: 5, // Limit to 5 ticks on Y-axis
           callback: (value) => {
             const num = typeof value === "number" ? value : Number(value);
-            if (num === 0) return "0";
+            if (num === 0) {
+              return "0";
+            }
             if (num < 1) {
               return num.toLocaleString("en-US", {
                 minimumFractionDigits: 2,

@@ -1,204 +1,281 @@
 "use client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import Link from "next/link";
-import Image from "next/image";
-import { useState } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
-    Copy01Icon,
-    Tick02Icon,
-    ArrowUpRight01Icon,
-    GlobeIcon,
-    NewTwitterIcon,
-    TelegramIcon,
-    GithubIcon,
-    LegalDocument01Icon,
+  Copy01Icon,
+  GlobeIcon,
+  LegalDocument01Icon,
+  NewTwitterIcon,
+  Tick02Icon,
 } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 
 interface CoinDetailsProps {
-    coinData: any;
+  coinData: CoinData | null;
 }
 
+interface CoinData {
+  name: string;
+  symbol: string;
+  image: {
+    large: string;
+  };
+  description: {
+    en: string;
+  };
+  links: {
+    homepage: string[];
+    twitter_screen_name: string;
+    telegram_channel_identifier: string;
+    repos_url: {
+      github: string[];
+    };
+    whitepaper: string;
+    blockchain_site: string[];
+  };
+  contract_address: string;
+  categories: string[];
+  market_cap_rank: number;
+}
+
+const EmptyCard = () => (
+  <Card className="h-full overflow-y-scroll">
+    <CardHeader />
+    <CardContent />
+  </Card>
+);
+
+const truncateAddress = (address: string) => {
+  if (!address) {
+    return "";
+  }
+  return `${address.slice(0, 12)}...${address.slice(-6)}`;
+};
+
+const cleanDescription = (html: string) => {
+  return html.replace(/<[^>]*>/g, "");
+};
+
+const CoinHeader = ({ coinData }: { coinData: CoinData }) => {
+  const { name, symbol, image, market_cap_rank } = coinData;
+
+  return (
+    <div className="flex items-center gap-3">
+      {image?.large && (
+        <Image
+          alt={name}
+          className="rounded-full"
+          height={32}
+          src={image.large}
+          width={32}
+        />
+      )}
+      <div>
+        <h1 className="overflow-hidden truncate font-semibold text-base">
+          {name}
+        </h1>
+        <span className="text-muted-foreground text-xs uppercase">
+          {symbol}
+        </span>
+      </div>
+      {market_cap_rank && <Badge>Rank #{market_cap_rank}</Badge>}
+    </div>
+  );
+};
+
+const CoinDescription = ({
+  name,
+  descriptionText,
+  expanded,
+  onToggle,
+}: {
+  name: string;
+  descriptionText: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) => {
+  const truncatedDescription =
+    descriptionText.length > 150
+      ? `${descriptionText.substring(0, 150)}...`
+      : descriptionText;
+
+  return (
+    <div className="space-y-2">
+      <h3 className="font-medium text-muted-foreground text-xs">
+        About {name}
+      </h3>
+      <p className="text-foreground/90 text-xs leading-relaxed">
+        {expanded
+          ? cleanDescription(descriptionText)
+          : cleanDescription(truncatedDescription)}
+      </p>
+      {descriptionText.length > 150 && (
+        <button
+          className="text-primary text-xs hover:underline"
+          onClick={onToggle}
+          type="button"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+};
+
+const CoinContractAddress = ({
+  contract_address,
+  copied,
+  onCopy,
+}: {
+  contract_address: string;
+  copied: boolean;
+  onCopy: () => void;
+}) => (
+  <div className="space-y-2">
+    <h3 className="font-medium text-muted-foreground text-sm">
+      Contract Address
+    </h3>
+    <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-1 px-2">
+      <code className="flex-1 font-mono text-xs">
+        {truncateAddress(contract_address)}
+      </code>
+      <button
+        className="cursor-pointer rounded-md p-1.5 transition-colors hover:bg-muted"
+        onClick={onCopy}
+        title="Copy address"
+        type="button"
+      >
+        {copied ? (
+          <HugeiconsIcon
+            className="text-green-500"
+            icon={Tick02Icon}
+            size={16}
+          />
+        ) : (
+          <HugeiconsIcon
+            className="text-muted-foreground"
+            icon={Copy01Icon}
+            size={16}
+          />
+        )}
+      </button>
+    </div>
+  </div>
+);
+
+const CoinCategories = ({ categories }: { categories: string[] }) => (
+  <div className="space-y-2">
+    <h3 className="font-medium text-muted-foreground text-sm">Categories</h3>
+    <div className="flex flex-wrap gap-2">
+      {categories.slice(0, 3).map((category: string) => (
+        <span
+          className="rounded-full bg-secondary px-2 py-1 text-secondary-foreground text-xs"
+          key={category}
+        >
+          {category}
+        </span>
+      ))}
+      {categories.length > 3 && (
+        <span className="px-2 py-1 text-muted-foreground text-xs">
+          +{categories.length - 3} more
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+const CoinLinks = ({ links }: { links: CoinData["links"] }) => {
+  const homepage = links?.homepage?.[0] || "";
+  const twitterHandle = links?.twitter_screen_name || "";
+  const whitepaper = links?.whitepaper || "";
+
+  return (
+    <div className="space-y-2">
+      <h3 className="font-medium text-muted-foreground text-sm">Links</h3>
+      <div className="flex flex-wrap gap-2">
+        {homepage && (
+          <Link
+            className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm transition-colors hover:bg-muted"
+            href={homepage}
+            target="_blank"
+          >
+            <HugeiconsIcon icon={GlobeIcon} size={16} />
+            Website
+          </Link>
+        )}
+        {twitterHandle && (
+          <Link
+            className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs transition-colors hover:bg-muted"
+            href={`https://twitter.com/${twitterHandle}`}
+            target="_blank"
+          >
+            <HugeiconsIcon icon={NewTwitterIcon} size={16} />
+            Twitter
+          </Link>
+        )}
+        {whitepaper && (
+          <Link
+            className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs transition-colors hover:bg-muted"
+            href={whitepaper}
+            target="_blank"
+          >
+            <HugeiconsIcon icon={LegalDocument01Icon} size={16} />
+            Whitepaper
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CoinDetails = ({ coinData }: CoinDetailsProps) => {
-    const [copied, setCopied] = useState(false);
-    const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-    // Show empty card while data is loading
-    if (!coinData) {
-        return (
-            <Card className="overflow-y-scroll h-full">
-                <CardHeader />
-                <CardContent />
-            </Card>
-        );
-    }
+  if (!coinData) {
+    return <EmptyCard />;
+  }
 
-    const {
-        name,
-        symbol,
-        image,
-        description,
-        links,
-        contract_address,
-        asset_platform_id,
-        categories,
-        sentiment_votes_up_percentage,
-        sentiment_votes_down_percentage,
-        market_cap_rank,
-        community_data,
-    } = coinData;
+  const { name, description, links, contract_address, categories } = coinData;
 
-    const descriptionText = description?.en || "";
-    const truncatedDescription = descriptionText.length > 150
-        ? descriptionText.substring(0, 150) + "..."
-        : descriptionText;
+  const descriptionText = description?.en || "";
 
-    const homepage = links?.homepage?.[0] || "";
-    const twitterHandle = links?.twitter_screen_name || "";
-    const telegramChannel = links?.telegram_channel_identifier || "";
-    const githubRepos = links?.repos_url?.github || [];
-    const whitepaper = links?.whitepaper || "";
-    const blockchainSites = links?.blockchain_site?.filter((site: string) => site) || [];
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const truncateAddress = (address: string) => {
-        if (!address) return "";
-        return `${address.slice(0, 12)}...${address.slice(-6)}`;
-    };
-
-    const cleanDescription = (html: string) => {
-        return html.replace(/<[^>]*>/g, "");
-    };
-
-    return (
-        <Card className="overflow-y-scroll h-full">
-            <CardHeader>
-                <div className="flex items-center gap-3">
-                    {image?.large && (
-                        <Image
-                            src={image.large}
-                            alt={name}
-                            width={32}
-                            height={32}
-                            className="rounded-full"
-                        />
-                    )}
-                    <div>
-                        <h1 className="text-base font-semibold overflow-hidden truncate">{name}</h1>
-                        <span className="text-xs text-muted-foreground uppercase">{symbol}</span>
-                    </div>
-                    {market_cap_rank && (
-                        <Badge>Rank #{market_cap_rank}</Badge>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {/* Description */}
-                <div className="space-y-2">
-                    <h3 className="text-xs font-medium text-muted-foreground">About {name}</h3>
-                    <p className="text-xs leading-relaxed text-foreground/90">
-                        {expanded ? cleanDescription(descriptionText) : cleanDescription(truncatedDescription)}
-                    </p>
-                    {descriptionText.length > 150 && (
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            className="text-xs text-primary hover:underline"
-                        >
-                            {expanded ? "Show less" : "Read more"}
-                        </button>
-                    )}
-                </div>
-
-                {/* Contract Address */}
-                {contract_address && (
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Contract Address</h3>
-                        <div className="flex items-center gap-2 p-1 px-2 bg-muted/50 rounded-lg">
-                            <code className="flex-1 text-xs font-mono">
-                                {truncateAddress(contract_address)}
-                            </code>
-                            <button
-                                onClick={() => copyToClipboard(contract_address)}
-                                className="p-1.5 hover:bg-muted rounded-md transition-colors cursor-pointer"
-                                title="Copy address"
-                            >
-                                {copied ? (
-                                    <HugeiconsIcon icon={Tick02Icon} size={16} className="text-green-500" />
-                                ) : (
-                                    <HugeiconsIcon icon={Copy01Icon} size={16} className="text-muted-foreground" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Categories */}
-                {categories && categories.length > 0 && (
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {categories.slice(0, 3).map((category: string, index: number) => (
-                                <span
-                                    key={index}
-                                    className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full"
-                                >
-                                    {category}
-                                </span>
-                            ))}
-                            {categories.length > 3 && (
-                                <span className="px-2 py-1 text-xs text-muted-foreground">
-                                    +{categories.length - 3} more
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
-                {/* Links */}
-                <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">Links</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {homepage && (
-                            <Link
-                                href={homepage}
-                                target="_blank"
-                                className="flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted rounded-lg transition-colors text-sm"
-                            >
-                                <HugeiconsIcon icon={GlobeIcon} size={16} />
-                                Website
-                            </Link>
-                        )}
-                        {twitterHandle && (
-                            <Link
-                                href={`https://twitter.com/${twitterHandle}`}
-                                target="_blank"
-                                className="flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted rounded-lg transition-colors text-xs"
-                            >
-                                <HugeiconsIcon icon={NewTwitterIcon} size={16} />
-                                Twitter
-                            </Link>
-                        )}
-                        {whitepaper && (
-                            <Link
-                                href={whitepaper}
-                                target="_blank"
-                                className="flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted rounded-lg transition-colors text-xs"
-                            >
-                                <HugeiconsIcon icon={LegalDocument01Icon} size={16} />
-                                Whitepaper
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-        </Card >
-    );
+  return (
+    <Card className="h-full overflow-y-scroll">
+      <CardHeader>
+        <CoinHeader coinData={coinData} />
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <CoinDescription
+          descriptionText={descriptionText}
+          expanded={expanded}
+          name={name}
+          onToggle={() => setExpanded(!expanded)}
+        />
+        {contract_address && (
+          <CoinContractAddress
+            contract_address={contract_address}
+            copied={copied}
+            onCopy={() => copyToClipboard(contract_address)}
+          />
+        )}
+        {categories && categories.length > 0 && (
+          <CoinCategories categories={categories} />
+        )}
+        <CoinLinks links={links} />
+      </CardContent>
+    </Card>
+  );
 };
 
 export default CoinDetails;
