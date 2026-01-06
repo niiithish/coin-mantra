@@ -3,8 +3,7 @@ import { UnfoldMoreIcon, UserCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOutAction } from "@/app/actions/auth";
+import { usePathname, useRouter } from "next/navigation";
 import SearchDialog from "@/components/search-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +14,15 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 export default function Header() {
+  const router = useRouter();
   const pathname = usePathname();
   const { data: session } = authClient.useSession();
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    router.push("/");
+  };
+
   return (
     <header className="flex items-center justify-between border-b px-8 py-4">
       <Link className="flex items-center gap-2" href="/">
@@ -59,10 +65,10 @@ export default function Header() {
                 </p>
                 <HugeiconsIcon icon={UnfoldMoreIcon} size={16} />
               </PopoverTrigger>
-              <PopoverContent>
-                <form action={signOutAction}>
-                  <Button type="submit">Sign Out</Button>
-                </form>
+              <PopoverContent className="w-[150px]">
+                <Button onClick={handleSignOut} variant="destructive">
+                  Sign Out
+                </Button>
               </PopoverContent>
             </Popover>
           </div>

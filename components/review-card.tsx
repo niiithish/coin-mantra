@@ -14,7 +14,7 @@ const ReviewCard = () => {
       <CardFooter>
         <div className="flex w-full items-center justify-between">
           <div>
-            <p className="font-semibold text-base">— Ethan R.</p>
+            <p className="font-semibold text-base">— No one :)</p>
             <p className="text-sm">Retail Investor</p>
           </div>
           <div className="flex items-center">

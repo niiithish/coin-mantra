@@ -3,12 +3,14 @@
 import { Delete02Icon, PencilEdit01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import CreateAlertDialog from "@/components/create-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { type Alert, deleteAlert, getAlertById, getAlerts } from "@/lib/alerts";
+import { useAlerts } from "@/hooks/use-alerts";
+import type { Alert } from "@/lib/alerts";
 
 // Helper to format condition for display
 const formatCondition = (condition: string): string => {
@@ -50,21 +52,27 @@ interface CoinPriceData {
 }
 
 const AlertList = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const _router = useRouter();
+  const {
+    alerts,
+    isLoading: loadingAlerts,
+    deleteAlert: deleteAlertFn,
+    refresh,
+  } = useAlerts();
   const [coinPrices, setCoinPrices] = useState<Record<string, CoinPriceData>>(
     {}
   );
-  const [loading, setLoading] = useState(true);
+  const [_pricesLoading, setPricesLoading] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch coin prices from CoinGecko API
   const fetchCoinPrices = useCallback(async (coinIds: string[]) => {
     if (coinIds.length === 0) {
-      setLoading(false);
       return;
     }
 
+    setPricesLoading(true);
     try {
       const response = await fetch(
         `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(",")}&price_change_percentage=24h`
@@ -87,34 +95,25 @@ const AlertList = () => {
     } catch (error) {
       console.error("Error fetching coin prices:", error);
     } finally {
-      setLoading(false);
+      setPricesLoading(false);
     }
   }, []);
 
-  // Load alerts from localStorage
-  const loadAlerts = useCallback(async () => {
-    setLoading(true);
-    const storedAlerts = await getAlerts();
-    setAlerts(storedAlerts);
-
-    // Fetch coin prices for all unique coins
-    const uniqueCoinIds = [...new Set(storedAlerts.map((a) => a.coinId))];
-    await fetchCoinPrices(uniqueCoinIds);
-  }, [fetchCoinPrices]);
-
-  // Initial load
+  // Fetch coin prices when alerts change
   useEffect(() => {
-    loadAlerts();
-  }, [loadAlerts]);
+    if (alerts.length > 0) {
+      const uniqueCoinIds = [...new Set(alerts.map((a) => a.coinId))];
+      fetchCoinPrices(uniqueCoinIds);
+    }
+  }, [alerts, fetchCoinPrices]);
 
   const handleDeleteAlert = async (alertId: string, alertName: string) => {
-    await deleteAlert(alertId);
-    setAlerts(alerts.filter((a) => a.id !== alertId));
+    await deleteAlertFn(alertId);
     toast.success(`Alert "${alertName}" deleted`);
   };
 
-  const handleEditAlert = async (alertId: string) => {
-    const alert = await getAlertById(alertId);
+  const handleEditAlert = (alertId: string) => {
+    const alert = alerts.find((a: Alert) => a.id === alertId);
     if (alert) {
       setEditingAlert(alert);
       setIsEditDialogOpen(true);
@@ -129,12 +128,11 @@ const AlertList = () => {
   };
 
   const handleAlertUpdated = () => {
-    loadAlerts();
     setEditingAlert(null);
     setIsEditDialogOpen(false);
   };
 
-  if (loading) {
+  if (loadingAlerts) {
     return <Card className="h-full w-full" />;
   }
 
@@ -143,7 +141,7 @@ const AlertList = () => {
       <div className="flex w-full flex-col gap-4">
         <div className="flex flex-row items-center justify-between">
           <h1 className="font-bold text-lg">Price Alerts</h1>
-          <CreateAlertDialog onAlertCreated={loadAlerts} />
+          <CreateAlertDialog onAlertCreated={refresh} />
         </div>
         <Card className="h-full w-full">
           <CardContent>
@@ -165,7 +163,7 @@ const AlertList = () => {
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
         <h1 className="font-bold text-lg">Price Alerts</h1>
-        <CreateAlertDialog onAlertCreated={loadAlerts} />
+        <CreateAlertDialog onAlertCreated={refresh} />
       </div>
       <Card className="h-full w-full overflow-y-auto">
         <CardContent className="flex flex-col gap-4">

@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { type Alert, saveAlert, updateAlert } from "@/lib/alerts";
+import { useAlerts } from "@/hooks/use-alerts";
+import type { Alert } from "@/lib/alerts";
 
 interface CreateAlertDialogProps {
   coinId?: string;
@@ -339,6 +340,8 @@ const CreateAlertDialog = ({
     }
   };
 
+  const { addAlert, updateAlert } = useAlerts();
+
   const handleSaveAlert = async () => {
     // Validate form
     const validationError = validateAlertForm(
@@ -365,25 +368,19 @@ const CreateAlertDialog = ({
       frequencyRef
     );
 
-    if (isEditMode && editAlert) {
-      // Update existing alert
-      const success = await updateAlert(editAlert.id, alertData);
-
-      if (success) {
-        toast.success(`Alert "${alertData.alertName}" updated successfully!`);
+    try {
+      if (isEditMode && editAlert) {
+        // Update existing alert
+        await updateAlert({ id: editAlert.id, updates: alertData });
+        // Mutation handled toast and invalidation
       } else {
-        toast.error("Failed to update alert");
-        return;
+        // Create new alert
+        await addAlert(alertData);
+        // Mutation handled toast and invalidation
       }
-    } else {
-      // Create new alert
-      const newAlert = await saveAlert(alertData);
-      if (newAlert) {
-        toast.success(`Alert "${newAlert.alertName}" created successfully!`);
-      } else {
-        toast.error("Failed to create alert");
-        return;
-      }
+    } catch (_error) {
+      // Error is handled in hook
+      return;
     }
 
     // Notify parent component

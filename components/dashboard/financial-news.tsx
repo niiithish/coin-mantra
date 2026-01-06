@@ -1,5 +1,6 @@
+"use client";
 import Image from "next/image";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,7 @@ interface News {
 }
 
 const FinancialNews = () => {
+  const router = useRouter();
   const [news, setNews] = useState<News[]>([]);
   const [error, setError] = useState<string | null>(null);
 

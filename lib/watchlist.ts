@@ -1,4 +1,5 @@
 // Watchlist types and API management
+import { authClient } from "./auth-client";
 
 export interface WatchlistItem {
   id: string;
@@ -6,15 +7,45 @@ export interface WatchlistItem {
   addedAt: string;
 }
 
+const LOCAL_WATCHLIST_KEY = "coinwatch_watchlist";
+
 /**
- * Get all watchlist items from API
+ * Get local watchlist from localStorage
+ */
+function getLocalWatchlist(): WatchlistItem[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  const stored = localStorage.getItem(LOCAL_WATCHLIST_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+/**
+ * Save to local watchlist
+ */
+function saveLocalWatchlist(items: WatchlistItem[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  localStorage.setItem(LOCAL_WATCHLIST_KEY, JSON.stringify(items));
+}
+
+/**
+ * Get all watchlist items
  */
 export async function getWatchlist(): Promise<WatchlistItem[]> {
   try {
+    const session = await authClient.getSession();
+
+    // If not logged in, use localStorage
+    if (!session.data) {
+      return getLocalWatchlist();
+    }
+
     const response = await fetch("/api/watchlist");
     if (!response.ok) {
       if (response.status === 401) {
-        return []; // Not logged in
+        return getLocalWatchlist();
       }
       throw new Error("Failed to fetch watchlist");
     }
@@ -22,7 +53,7 @@ export async function getWatchlist(): Promise<WatchlistItem[]> {
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching watchlist:", error);
-    return [];
+    return getLocalWatchlist();
   }
 }
 
@@ -33,6 +64,25 @@ export async function addToWatchlist(
   coinId: string
 ): Promise<WatchlistItem | null> {
   try {
+    const session = await authClient.getSession();
+
+    if (!session.data) {
+      const localWatchlist = getLocalWatchlist();
+      if (localWatchlist.some((item) => item.coinId === coinId.toLowerCase())) {
+        return null; // Already exists
+      }
+
+      const newItem: WatchlistItem = {
+        id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        coinId: coinId.toLowerCase(),
+        addedAt: new Date().toISOString(),
+      };
+
+      const updatedList = [...localWatchlist, newItem];
+      saveLocalWatchlist(updatedList);
+      return newItem;
+    }
+
     const response = await fetch("/api/watchlist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,6 +108,17 @@ export async function addToWatchlist(
  */
 export async function removeFromWatchlist(coinId: string): Promise<boolean> {
   try {
+    const session = await authClient.getSession();
+
+    if (!session.data) {
+      const localWatchlist = getLocalWatchlist();
+      const updatedList = localWatchlist.filter(
+        (item) => item.coinId !== coinId.toLowerCase()
+      );
+      saveLocalWatchlist(updatedList);
+      return true;
+    }
+
     const response = await fetch(
       `/api/watchlist?coinId=${coinId.toLowerCase()}`,
       {
@@ -89,11 +150,33 @@ export async function getWatchlistCoinIds(): Promise<string[]> {
 }
 
 /**
- * Clear the entire watchlist
- * Note: This might need a specific API endpoint if implemented,
- * for now we just return as it's not commonly used.
+ * Clear the local watchlist
  */
-export function clearWatchlist(): void {
-  // Not implemented on server yet
-  console.warn("clearWatchlist not implemented on server");
+export function clearLocalWatchlist(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(LOCAL_WATCHLIST_KEY);
+  }
+}
+
+/**
+ * Sync local watchlist to database
+ */
+export async function syncWatchlistToDb(): Promise<void> {
+  const localWatchlist = getLocalWatchlist();
+  if (localWatchlist.length === 0) {
+    return;
+  }
+
+  const session = await authClient.getSession();
+  if (!session.data) {
+    return;
+  }
+
+  console.log("Syncing local watchlist to DB...");
+
+  for (const item of localWatchlist) {
+    await addToWatchlist(item.coinId);
+  }
+
+  clearLocalWatchlist();
 }

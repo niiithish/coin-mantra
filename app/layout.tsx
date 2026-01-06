@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthSync } from "@/components/auth-sync";
 import Header from "@/components/header";
 import { QueryProvider } from "@/components/query-provider";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
+          <AuthSync />
           <Header />
           {children}
         </QueryProvider>

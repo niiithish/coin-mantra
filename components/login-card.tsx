@@ -2,8 +2,9 @@
 import { EyeIcon, EyeOff } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signInAction } from "@/app/actions/auth";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,9 +20,34 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth-client";
 
 const LoginForm = () => {
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/dashboard",
+      });
+      router.push("/dashboard");
+    } catch (_error) {
+      toast.error("Failed to sign in. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Card className="flex w-full max-w-[350px] flex-col justify-center gap-6 bg-transparent ring-0">
@@ -32,7 +58,7 @@ const LoginForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={signInAction}>
+        <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -70,7 +96,9 @@ const LoginForm = () => {
               </div>
             </Field>
             <Field>
-              <Button type="submit">Login</Button>
+              <Button disabled={isLoading} type="submit">
+                {isLoading ? "Signing in..." : "Login"}
+              </Button>
               <FieldDescription className="text-center">
                 Don&apos;t have an account? <Link href="/sign-up">Sign up</Link>
               </FieldDescription>

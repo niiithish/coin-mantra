@@ -3,9 +3,10 @@
 import { EyeIcon, EyeOff } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import countries from "world-countries";
-import { signUpAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,6 +30,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth-client";
 
 const countryMap = new Map(
   countries.map((c) => [c.name.common, { flag: c.flag, code: c.cca3 }])
@@ -37,7 +39,43 @@ const countryMap = new Map(
 const countryNames = Array.from(countryMap.keys()).sort();
 
 const SignUpForm = () => {
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const name = formData.get("name") as string;
+    const country = formData.get("country") as string;
+
+    try {
+      // First sign up
+      await authClient.signUp.email({
+        email,
+        password,
+        name,
+        country,
+      });
+
+      // Then sign in to create a session
+      await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/dashboard",
+      });
+
+      router.push("/dashboard");
+    } catch (_error) {
+      toast.error("Failed to sign up. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Card className="w-full max-w-[350px] bg-transparent ring-0">
@@ -48,7 +86,7 @@ const SignUpForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={signUpAction}>
+        <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Name</FieldLabel>
@@ -115,7 +153,9 @@ const SignUpForm = () => {
               </Combobox>
             </Field>
             <Field>
-              <Button type="submit">Sign Up</Button>
+              <Button disabled={isLoading} type="submit">
+                {isLoading ? "Signing up..." : "Sign Up"}
+              </Button>
               <FieldDescription className="text-center">
                 Already have an account? <Link href="/login">Login</Link>
               </FieldDescription>
