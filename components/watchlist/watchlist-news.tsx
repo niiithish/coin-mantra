@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -55,23 +55,14 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.substring(0, maxLength).trim()}...`;
 };
 
-
-const NewsCard = ({
-  news,
-  ticker,
-  colorIndex,
-}: {
-  news: News;
-  ticker?: string;
-  colorIndex: number;
-}) => {
+const NewsCard = ({ news, ticker }: { news: News; ticker?: string }) => {
   return (
     <Card className="group flex h-full flex-col transition-all duration-300 hover:shadow-black/20 hover:shadow-lg hover:ring-foreground/20">
       <CardHeader className="gap-3">
         {/* Ticker Badge */}
         {ticker && (
           <Badge
-            className={`w-fit rounded-md uppercase tracking-wide`}
+            className={"w-fit rounded-md uppercase tracking-wide"}
             variant="outline"
           >
             {ticker}
@@ -110,11 +101,6 @@ const NewsCard = ({
       </CardFooter>
     </Card>
   );
-};
-
-// Skeleton card for loading state
-const NewsCardSkeleton = () => {
-  return <Card className="flex h-full flex-col" />;
 };
 
 const fetchNewsFromAPI = async () => {
@@ -193,17 +179,12 @@ const useNews = () => {
 };
 
 const NewsGrid = ({ news }: { news: News[] }) => {
-
   return (
     <div className="w-full">
       <h2 className="mb-6 font-semibold text-xl">Latest News</h2>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {news.map((item, index) => (
-          <NewsCard
-            colorIndex={index}
-            key={item.url}
-            news={item}
-          />
+        {news.map((item) => (
+          <NewsCard key={item.url} news={item} />
         ))}
       </div>
     </div>

@@ -65,12 +65,12 @@ const TrendingToday = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
+    <div className="flex h-full w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-lg font-bold">Trending Today</h1>
+        <h1 className="font-bold text-lg">Trending Today</h1>
       </div>
-      <Card className="flex-1 min-h-0 overflow-y-auto px-0 py-0 w-full">
-        <CardContent className="px-0 py-0 w-full">
+      <Card className="min-h-0 w-full flex-1 overflow-y-auto px-0 py-0">
+        <CardContent className="w-full px-0 py-0">
           <Table>
             <TableHeader className="bg-secondary/20">
               <TableRow>
@@ -84,20 +84,18 @@ const TrendingToday = () => {
             <TableBody>
               {trending.map((coin) => (
                 <TableRow className="text-sm" key={coin.item.id}>
-                  <TableCell className="align-center max-w-[150px]">
+                  <TableCell className="max-w-[150px] align-center">
                     <Link href={`/coin/${coin.item.slug}`}>
                       <div className="flex flex-row items-center gap-2">
                         <Image
                           alt={coin.item.name}
-                          className="rounded-full flex-shrink-0"
+                          className="flex-shrink-0 rounded-full"
                           height={24}
                           src={coin.item.small}
                           style={{ height: "auto" }}
                           width={24}
                         />
-                        <p
-                          className="hover:underline whitespace-nowrap overflow-hidden text-ellipsis"
-                        >
+                        <p className="overflow-hidden text-ellipsis whitespace-nowrap hover:underline">
                           {coin.item.name}
                         </p>
                       </div>

@@ -57,7 +57,9 @@ export function LineChart({
   // ResizeObserver to detect container size changes (handles browser zoom)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       // Use requestAnimationFrame to debounce resize calls
@@ -197,8 +199,8 @@ export function LineChart({
 
   return (
     <div
+      className={`relative h-full w-full overflow-hidden ${className}`}
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden ${className}`}
     >
       <div className="absolute inset-0">
         <Line data={chartData} options={defaultOptions} ref={chartRef} />

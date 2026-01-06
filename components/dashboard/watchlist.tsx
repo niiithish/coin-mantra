@@ -3,8 +3,10 @@
 import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -15,27 +17,25 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Badge } from "../ui/badge";
 import {
-  getWatchlist,
   addToWatchlist,
+  getWatchlist,
   removeFromWatchlist,
   type WatchlistItem,
 } from "@/lib/watchlist";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Badge } from "../ui/badge";
 
 interface CoinData {
   id: string;
   symbol: string;
   name: string;
   image?:
-  | {
-    thumb?: string;
-    small?: string;
-    large?: string;
-  }
-  | string;
+    | {
+        thumb?: string;
+        small?: string;
+        large?: string;
+      }
+    | string;
   market_data?: {
     current_price?: {
       usd?: number;
@@ -237,20 +237,17 @@ const Watchlist = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full min-h-0">
+    <div className="flex h-full min-h-0 w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-lg font-bold">Your Watchlist</h1>
-        <Button variant="link" onClick={() => router.push("/watchlist")}>
+        <h1 className="font-bold text-lg">Your Watchlist</h1>
+        <Button onClick={() => router.push("/watchlist")} variant="link">
           View All
         </Button>
       </div>
-      <Card className="flex-1 min-h-0 items-start content-start gap-4 p-4 overflow-auto">
-        <div className="grid grid-cols-3 gap-4 w-full">
+      <Card className="min-h-0 flex-1 content-start items-start gap-4 overflow-auto p-4">
+        <div className="grid w-full grid-cols-3 gap-4">
           {coins.map((coin) => (
-            <Card
-              className="bg-secondary/20"
-              key={coin.id}
-            >
+            <Card className="bg-secondary/20" key={coin.id}>
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div className="rounded-full">
@@ -258,39 +255,44 @@ const Watchlist = () => {
                       alt={coin.name}
                       className="rounded-full"
                       height={32}
-                      src={getImageUrl(coin)}
-                      style={{ height: "auto" }}
-                      width={32}
                       onClick={() => {
                         router.push(`/coin/${coin.id}`);
                       }}
+                      src={getImageUrl(coin)}
+                      style={{ height: "auto" }}
+                      width={32}
                     />
                   </div>
                   <div className="flex gap-2">
                     <div className="rounded-full">
                       <HugeiconsIcon
                         className="cursor-pointer"
-                        size={18}
                         color="#63a401"
                         fill="#63a401"
                         icon={StarIcon}
                         onClick={() => handleRemoveCoin(coin.id)}
+                        size={18}
                       />
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-regular text-foreground/80 text-xs cursor-pointer hover:text-primary" onClick={() => {
-                    router.push(`/coin/${coin.id}`);
-                  }}>
+                  <button
+                    className="cursor-pointer text-left font-regular text-foreground/80 text-xs hover:text-primary"
+                    onClick={() => {
+                      router.push(`/coin/${coin.id}`);
+                    }}
+                    type="button"
+                  >
                     {coin.name}
-                  </h3>
+                  </button>
                   {coin.market_data?.current_price?.usd ? (
                     <div className="font-semibold text-lg">
                       ${coin.market_data.current_price.usd.toFixed(2)}
                     </div>
                   ) : null}
-                  {coin.market_data?.price_change_percentage_24h !== undefined ? (
+                  {coin.market_data?.price_change_percentage_24h !==
+                  undefined ? (
                     <div
                       className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
                     >
@@ -305,7 +307,10 @@ const Watchlist = () => {
                         {coin.market_data.price_change_percentage_24h > 0
                           ? "+"
                           : ""}
-                        {coin.market_data.price_change_percentage_24h.toFixed(2)}%)
+                        {coin.market_data.price_change_percentage_24h.toFixed(
+                          2
+                        )}
+                        %)
                       </span>
                     </div>
                   ) : null}
@@ -315,18 +320,23 @@ const Watchlist = () => {
           ))}
           <Dialog onOpenChange={handleDialogOpenChange} open={dialogOpen}>
             <DialogTrigger>
-              <Card className="group cursor-pointer h-full bg-secondary/20 border-dashed hover:border-primary/50 hover:bg-secondary/40 transition-all duration-300">
-                <CardContent className="flex flex-col items-center justify-center gap-3 h-full">
+              <Card className="group h-full cursor-pointer border-dashed bg-secondary/20 transition-all duration-300 hover:border-primary/50 hover:bg-secondary/40">
+                <CardContent className="flex h-full flex-col items-center justify-center gap-3">
                   <div className="rounded-full border p-4">
                     <svg
+                      aria-labelledby="add-coin-icon-title"
                       className="h-8 w-8 text-primary/70"
                       fill="none"
+                      role="img"
                       stroke="currentColor"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
+                      <title id="add-coin-icon-title">
+                        Add coin to watchlist
+                      </title>
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                   </div>

@@ -10,7 +10,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogClose,
@@ -21,8 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-  getWatchlistCoinIds,
   addToWatchlist,
+  getWatchlistCoinIds,
   removeFromWatchlist,
 } from "@/lib/watchlist";
 
@@ -238,50 +237,54 @@ const SearchDialog = () => {
                   <div className="flex flex-col">
                     {results.map((coin) => (
                       <div
-                        className="group flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50"
+                        className="group flex w-full items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
                         key={coin.id}
-                        onClick={() => {
-                          router.push(`/coin/${coin.id}`);
-                          setOpen(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
+                      >
+                        <button
+                          className="flex flex-1 cursor-pointer items-center gap-3 text-left"
+                          onClick={() => {
                             router.push(`/coin/${coin.id}`);
                             setOpen(false);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <div className="relative h-8 w-8 flex-shrink-0">
-                          <Image
-                            alt={coin.name}
-                            className="rounded-full object-contain"
-                            fill
-                            src={coin.image}
-                          />
-                        </div>
-                        <div className="flex flex-1 flex-col gap-1 overflow-hidden min-w-0">
-                          <span className="font-medium text-sm uppercase whitespace-nowrap overflow-hidden text-ellipsis">
-                            {coin.name}
-                          </span>
-                          <span className="truncate text-muted-foreground text-xs">
-                            {coin.symbol}
-                          </span>
-                        </div>
+                          }}
+                          type="button"
+                        >
+                          <div className="relative h-8 w-8 flex-shrink-0">
+                            <Image
+                              alt={coin.name}
+                              className="rounded-full object-contain"
+                              fill
+                              src={coin.image}
+                            />
+                          </div>
+                          <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
+                            <span className="overflow-hidden text-ellipsis whitespace-nowrap font-medium text-sm uppercase">
+                              {coin.name}
+                            </span>
+                            <span className="truncate text-muted-foreground text-xs">
+                              {coin.symbol}
+                            </span>
+                          </div>
+                        </button>
                         <button
                           className="rounded-full p-1 transition-colors hover:bg-accent"
                           onClick={(e) => handleToggleWatchlist(e, coin)}
+                          title={
+                            isInWatchlist(coin.id)
+                              ? "Remove from watchlist"
+                              : "Add to watchlist"
+                          }
                           type="button"
-                          title={isInWatchlist(coin.id) ? "Remove from watchlist" : "Add to watchlist"}
                         >
                           <HugeiconsIcon
-                            className={isInWatchlist(coin.id) ? "#63a401" : "text-muted-foreground"}
+                            className={
+                              isInWatchlist(coin.id)
+                                ? "#63a401"
+                                : "text-muted-foreground"
+                            }
+                            color="#63a401"
+                            fill={isInWatchlist(coin.id) ? "#63a401" : "none"}
                             icon={StarIcon}
                             size={20}
-                            fill={isInWatchlist(coin.id) ? "#63a401" : "none"}
-                            color="#63a401"
                           />
                         </button>
                       </div>

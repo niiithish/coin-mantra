@@ -9,18 +9,18 @@ const DashboardPage = () => {
   return (
     <div className="flex flex-col gap-10 p-8">
       <div className="flex h-[65vh] gap-8">
-        <div className="flex flex-1 flex-col gap-4 h-full">
+        <div className="flex h-full flex-1 flex-col gap-4">
           <MarketSummary />
         </div>
-        <div className="flex flex-1 flex-col gap-4 h-full">
+        <div className="flex h-full flex-1 flex-col gap-4">
           <Watchlist />
         </div>
       </div>
       <div className="flex h-[80vh] gap-8">
-        <div className="flex flex-1 flex-col gap-4 h-full">
+        <div className="flex h-full flex-1 flex-col gap-4">
           <TrendingToday />
         </div>
-        <div className="flex flex-1 flex-col gap-4 h-full">
+        <div className="flex h-full flex-1 flex-col gap-4">
           <FinancialNews />
         </div>
       </div>

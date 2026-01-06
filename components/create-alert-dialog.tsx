@@ -1,6 +1,6 @@
 "use client";
 
-import { AddIcon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -91,6 +91,87 @@ const frequencyItems = [
   { label: "Every time", value: "every_time" },
 ];
 
+// Helper function to get initial selected coin
+const getInitialSelectedCoin = (
+  editAlert: Alert | undefined,
+  initialCoinId: string | undefined,
+  initialCoinName: string | undefined,
+  initialCoinSymbol: string | undefined
+): CoinResult | null => {
+  if (editAlert) {
+    return {
+      id: editAlert.coinId,
+      name: editAlert.coinName,
+      symbol: editAlert.coinSymbol,
+      image: "",
+      rank: null,
+    };
+  }
+  if (initialCoinId && initialCoinName && initialCoinSymbol) {
+    return {
+      id: initialCoinId,
+      name: initialCoinName,
+      symbol: initialCoinSymbol,
+      image: "",
+      rank: null,
+    };
+  }
+  return null;
+};
+
+// Helper function to build alert data
+const buildAlertData = (
+  alertName: string,
+  selectedCoin: CoinResult,
+  alertTypeRef: React.RefObject<string>,
+  conditionRef: React.RefObject<string>,
+  thresholdValue: string,
+  frequencyRef: React.RefObject<string>
+) => ({
+  alertName: alertName.trim(),
+  coinId: selectedCoin.id,
+  coinName: selectedCoin.name,
+  coinSymbol: selectedCoin.symbol.toUpperCase(),
+  alertType: alertTypeRef.current,
+  condition: conditionRef.current,
+  thresholdValue: thresholdValue.trim(),
+  frequency: frequencyRef.current,
+});
+
+// Helper function to validate alert form
+const validateAlertForm = (
+  alertName: string,
+  selectedCoin: CoinResult | null,
+  thresholdValue: string
+): string | null => {
+  if (!alertName.trim()) {
+    return "Please enter an alert name";
+  }
+  if (!selectedCoin) {
+    return "Please select a coin";
+  }
+  if (!thresholdValue.trim()) {
+    return "Please enter a threshold value";
+  }
+  return null;
+};
+
+// Helper to get reset values for edit mode
+const getEditModeResetValues = (editAlert: Alert) => ({
+  alertName: editAlert.alertName,
+  thresholdValue: editAlert.thresholdValue,
+  selectedCoin: {
+    id: editAlert.coinId,
+    name: editAlert.coinName,
+    symbol: editAlert.coinSymbol,
+    image: "",
+    rank: null,
+  } as CoinResult,
+  alertType: editAlert.alertType,
+  condition: editAlert.condition,
+  frequency: editAlert.frequency,
+});
+
 const CreateAlertDialog = ({
   coinId: initialCoinId,
   coinName: initialCoinName,
@@ -102,7 +183,9 @@ const CreateAlertDialog = ({
 }: CreateAlertDialogProps) => {
   const isEditMode = !!editAlert;
   const [alertName, setAlertName] = useState(editAlert?.alertName || "");
-  const [thresholdValue, setThresholdValue] = useState(editAlert?.thresholdValue || "");
+  const [thresholdValue, setThresholdValue] = useState(
+    editAlert?.thresholdValue || ""
+  );
   const [internalOpen, setInternalOpen] = useState(false);
 
   // Use controlled open state if provided, otherwise use internal state
@@ -110,27 +193,14 @@ const CreateAlertDialog = ({
   const setOpen = onOpenChange || setInternalOpen;
 
   // Coin selection state - prioritize editAlert over initial props
-  const [selectedCoin, setSelectedCoin] = useState<CoinResult | null>(() => {
-    if (editAlert) {
-      return {
-        id: editAlert.coinId,
-        name: editAlert.coinName,
-        symbol: editAlert.coinSymbol,
-        image: "",
-        rank: null,
-      };
-    }
-    if (initialCoinId && initialCoinName && initialCoinSymbol) {
-      return {
-        id: initialCoinId,
-        name: initialCoinName,
-        symbol: initialCoinSymbol,
-        image: "",
-        rank: null,
-      };
-    }
-    return null;
-  });
+  const [selectedCoin, setSelectedCoin] = useState<CoinResult | null>(() =>
+    getInitialSelectedCoin(
+      editAlert,
+      initialCoinId,
+      initialCoinName,
+      initialCoinSymbol
+    )
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CoinResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -224,12 +294,6 @@ const CreateAlertDialog = ({
     setShowDropdown(false);
   };
 
-  // Clear selected coin
-  const handleClearCoin = () => {
-    setSelectedCoin(null);
-    setSearchQuery("");
-  };
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -253,26 +317,19 @@ const CreateAlertDialog = ({
   }, [open, selectedCoin, fetchTrending]);
 
   const resetForm = () => {
+    setSearchQuery("");
     if (editAlert) {
       // For edit mode, reset to original values
-      setAlertName(editAlert.alertName);
-      setThresholdValue(editAlert.thresholdValue);
-      setSearchQuery("");
-      setSelectedCoin({
-        id: editAlert.coinId,
-        name: editAlert.coinName,
-        symbol: editAlert.coinSymbol,
-        image: "",
-        rank: null,
-      });
-      alertTypeRef.current = editAlert.alertType;
-      conditionRef.current = editAlert.condition;
-      frequencyRef.current = editAlert.frequency;
+      const resetValues = getEditModeResetValues(editAlert);
+      setAlertName(resetValues.alertName);
+      setThresholdValue(resetValues.thresholdValue);
+      setSelectedCoin(resetValues.selectedCoin);
+      alertTypeRef.current = resetValues.alertType;
+      conditionRef.current = resetValues.condition;
+      frequencyRef.current = resetValues.frequency;
     } else {
       setAlertName("");
       setThresholdValue("");
-      setSearchQuery("");
-      // Only reset selected coin if it wasn't passed as initial prop
       if (!initialCoinId) {
         setSelectedCoin(null);
       }
@@ -283,54 +340,46 @@ const CreateAlertDialog = ({
   };
 
   const handleSaveAlert = () => {
-    // Validate required fields
-    if (!alertName.trim()) {
-      toast.error("Please enter an alert name");
+    // Validate form
+    const validationError = validateAlertForm(
+      alertName,
+      selectedCoin,
+      thresholdValue
+    );
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
+    // Early return ensures selectedCoin is not null at this point
     if (!selectedCoin) {
-      toast.error("Please select a coin");
       return;
     }
 
-    if (!thresholdValue.trim()) {
-      toast.error("Please enter a threshold value");
-      return;
-    }
+    const alertData = buildAlertData(
+      alertName,
+      selectedCoin,
+      alertTypeRef,
+      conditionRef,
+      thresholdValue,
+      frequencyRef
+    );
 
     if (isEditMode && editAlert) {
       // Update existing alert
-      const updatedAlert = updateAlert(editAlert.id, {
-        alertName: alertName.trim(),
-        coinId: selectedCoin.id,
-        coinName: selectedCoin.name,
-        coinSymbol: selectedCoin.symbol.toUpperCase(),
-        alertType: alertTypeRef.current,
-        condition: conditionRef.current,
-        thresholdValue: thresholdValue.trim(),
-        frequency: frequencyRef.current,
-      });
+      const updatedAlert = updateAlert(editAlert.id, alertData);
 
       if (updatedAlert) {
-        toast.success(`Alert "${updatedAlert.alertName}" updated successfully!`);
+        toast.success(
+          `Alert "${updatedAlert.alertName}" updated successfully!`
+        );
       } else {
         toast.error("Failed to update alert");
         return;
       }
     } else {
       // Create new alert
-      const newAlert = saveAlert({
-        alertName: alertName.trim(),
-        coinId: selectedCoin.id,
-        coinName: selectedCoin.name,
-        coinSymbol: selectedCoin.symbol.toUpperCase(),
-        alertType: alertTypeRef.current,
-        condition: conditionRef.current,
-        thresholdValue: thresholdValue.trim(),
-        frequency: frequencyRef.current,
-      });
-
+      const newAlert = saveAlert(alertData);
       toast.success(`Alert "${newAlert.alertName}" created successfully!`);
     }
 
@@ -380,14 +429,14 @@ const CreateAlertDialog = ({
             <div className="relative" ref={dropdownRef}>
               {/* Selected coin display or placeholder */}
               <button
-                type="button"
+                className="flex h-8 w-full cursor-pointer items-center justify-between rounded-md border border-input bg-card px-3 transition-colors hover:bg-accent/50"
                 onClick={() => {
                   setShowDropdown(true);
                   if (searchResults.length === 0) {
                     fetchTrending();
                   }
                 }}
-                className="flex h-8 w-full bg-card items-center justify-between rounded-md border border-input px-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                type="button"
               >
                 {selectedCoin ? (
                   <div className="flex items-center gap-2">
@@ -416,7 +465,7 @@ const CreateAlertDialog = ({
               {showDropdown && (
                 <div className="absolute z-50 mt-1 w-full rounded-md border border-input bg-card shadow-lg">
                   {/* Search input inside dropdown */}
-                  <div className="p-2 border-b border-input">
+                  <div className="border-input border-b p-2">
                     <InputGroup className="w-full">
                       <InputGroupAddon align="inline-start">
                         <InputGroupText>
@@ -590,9 +639,7 @@ const CreateAlertDialog = ({
           </div>
 
           {/* Save Alert Button */}
-          <Button
-            onClick={handleSaveAlert}
-          >
+          <Button onClick={handleSaveAlert}>
             {isEditMode ? "Update Alert" : "Create Alert"}
           </Button>
         </div>

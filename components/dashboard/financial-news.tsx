@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import router from "next/router";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface News {
   source: {
@@ -41,14 +41,14 @@ const FinancialNews = () => {
     fetchNews();
   }, []);
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
+    <div className="flex h-full w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-lg font-bold">Today's Financial News</h1>
-        <Button variant="link" onClick={() => router.push("/news")}>
+        <h1 className="font-bold text-lg">Today's Financial News</h1>
+        <Button onClick={() => router.push("/news")} variant="link">
           View All
         </Button>
       </div>
-      <Card className="flex-1 min-h-0 overflow-y-auto">
+      <Card className="min-h-0 flex-1 overflow-y-auto">
         <CardContent className="flex flex-col gap-3">
           {error && (
             <div className="flex items-center justify-center py-8">

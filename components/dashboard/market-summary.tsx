@@ -117,12 +117,15 @@ const MarketSummary = () => {
   }, [coin]);
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
+    <div className="flex h-full w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-lg font-bold">Market Summary</h1>
+        <h1 className="font-bold text-lg">Market Summary</h1>
       </div>
-      <Card className="w-full flex-1 flex flex-col overflow-hidden min-h-0">
-        <Tabs value={id} className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <Card className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+        <Tabs
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          value={id}
+        >
           <CardHeader>
             <TabsList className="shadow-sm">
               <TabsTrigger
@@ -151,10 +154,13 @@ const MarketSummary = () => {
               </TabsTrigger>
             </TabsList>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col overflow-hidden min-h-0">
-            <TabsContent className="flex w-full flex-col gap-4 h-full" value={id}>
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <TabsContent
+              className="flex h-full w-full flex-col gap-4"
+              value={id}
+            >
               <div className="h-[calc(100%-115px)]">
-                <LineChart className="w-full h-full" data={chartData} />
+                <LineChart className="h-full w-full" data={chartData} />
               </div>
               <div className="flex items-stretch justify-between gap-5">
                 {coins.map((item: Coin) => (

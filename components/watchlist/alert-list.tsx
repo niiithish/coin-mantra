@@ -5,11 +5,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type Alert, deleteAlert, getAlerts, getAlertById } from "@/lib/alerts";
 import CreateAlertDialog from "@/components/create-alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { type Alert, deleteAlert, getAlertById, getAlerts } from "@/lib/alerts";
 
 // Helper to format condition for display
 const formatCondition = (condition: string): string => {
@@ -136,17 +135,14 @@ const AlertList = () => {
   };
 
   if (loading) {
-    return (
-      <Card className="h-full w-full">
-      </Card>
-    );
+    return <Card className="h-full w-full" />;
   }
 
   if (alerts.length === 0) {
     return (
-      <div className="flex flex-col gap-4 w-full">
+      <div className="flex w-full flex-col gap-4">
         <div className="flex flex-row items-center justify-between">
-          <h1 className="text-lg font-bold">Price Alerts</h1>
+          <h1 className="font-bold text-lg">Price Alerts</h1>
           <CreateAlertDialog onAlertCreated={loadAlerts} />
         </div>
         <Card className="h-full w-full">
@@ -166,9 +162,9 @@ const AlertList = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-lg font-bold">Price Alerts</h1>
+        <h1 className="font-bold text-lg">Price Alerts</h1>
         <CreateAlertDialog onAlertCreated={loadAlerts} />
       </div>
       <Card className="h-full w-full overflow-y-auto">
@@ -180,7 +176,7 @@ const AlertList = () => {
             const coinImage = priceData?.image || "";
 
             return (
-              <Card key={alert.id} className="bg-secondary/10 py-3">
+              <Card className="bg-secondary/10 py-3" key={alert.id}>
                 <CardContent className="flex flex-col gap-3 px-3">
                   {/* Coin Info Row */}
                   <div className="flex items-center justify-between">
@@ -188,15 +184,15 @@ const AlertList = () => {
                       <Image
                         alt="No Image"
                         className="rounded-full"
-                        height={40}
+                        height={32}
                         src={coinImage}
-                        width={40}
+                        width={32}
                       />
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-muted-foreground text-sm">
                           {alert.coinName}
                         </span>
-                        <span className="text-foreground font-semibold text-sm">
+                        <span className="font-semibold text-foreground text-sm">
                           $
                           {currentPrice.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
@@ -218,7 +214,7 @@ const AlertList = () => {
                     </div>
                   </div>
                   {/* Divider */}
-                  <div className="border-t border-border" />
+                  <div className="border-border border-t" />
 
                   {/* Alert Info Row */}
                   <div className="flex flex-col justify-between gap-1">
@@ -227,8 +223,20 @@ const AlertList = () => {
                         Alert:
                       </span>
                       <span className="flex flex-row gap-2">
-                        <HugeiconsIcon className="cursor-pointer" icon={PencilEdit01Icon} size={14} onClick={() => handleEditAlert(alert.id)} />
-                        <HugeiconsIcon className="cursor-pointer" icon={Delete02Icon} size={14} onClick={() => handleDeleteAlert(alert.id, alert.alertName)} />
+                        <HugeiconsIcon
+                          className="cursor-pointer"
+                          icon={PencilEdit01Icon}
+                          onClick={() => handleEditAlert(alert.id)}
+                          size={14}
+                        />
+                        <HugeiconsIcon
+                          className="cursor-pointer"
+                          icon={Delete02Icon}
+                          onClick={() =>
+                            handleDeleteAlert(alert.id, alert.alertName)
+                          }
+                          size={14}
+                        />
                       </span>
                     </div>
                     <div className="flex flex-row justify-between">
