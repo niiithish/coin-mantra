@@ -50,63 +50,86 @@ const LoginForm = () => {
   };
 
   return (
-    <Card className="flex w-full max-w-[350px] flex-col justify-center gap-6 bg-transparent ring-0">
-      <CardHeader>
-        <CardTitle>Login to your account</CardTitle>
-        <CardDescription>
-          Enter your email below to login to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                name="email"
-                placeholder="you@example.com"
-                required
-                type="email"
-              />
-            </Field>
-            <Field>
-              <div className="flex items-center">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <a
-                  className="ml-auto inline-block text-xs underline-offset-4 hover:underline"
-                  href="/forgot-password"
-                >
-                  Forgot your password?
-                </a>
-              </div>
-              <div className="relative">
+    <div className="flex flex-col gap-4">
+      <Card className="flex w-full w-[350px] flex-col justify-center gap-6 bg-transparent ring-0">
+        <CardHeader>
+          <CardTitle>Login to your account</CardTitle>
+          <CardDescription>
+            Enter your email below to login to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
-                  id="password"
-                  name="password"
+                  id="email"
+                  name="email"
+                  placeholder="you@example.com"
                   required
-                  type={visible ? "text" : "password"}
+                  type="email"
                 />
-                <HugeiconsIcon
-                  className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-all hover:text-foreground"
-                  icon={visible ? EyeOff : EyeIcon}
-                  onClick={() => setVisible(!visible)}
-                  size={16}
-                />
-              </div>
-            </Field>
-            <Field>
-              <Button disabled={isLoading} type="submit">
-                {isLoading ? "Signing in..." : "Login"}
-              </Button>
-              <FieldDescription className="text-center">
-                Don&apos;t have an account? <Link href="/sign-up">Sign up</Link>
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+              </Field>
+              <Field>
+                <div className="flex items-center">
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <a
+                    className="ml-auto inline-block text-xs underline-offset-4 hover:underline"
+                    href="/forgot-password"
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    required
+                    type={visible ? "text" : "password"}
+                  />
+                  <HugeiconsIcon
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-all hover:text-foreground"
+                    icon={visible ? EyeOff : EyeIcon}
+                    onClick={() => setVisible(!visible)}
+                    size={16}
+                  />
+                </div>
+              </Field>
+              <Field>
+                <Button disabled={isLoading} type="submit">
+                  {isLoading ? "Signing in..." : "Login"}
+                </Button>
+                <FieldDescription className="text-center">
+                  Don&apos;t have an account? <Link href="/sign-up">Sign up</Link>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+      <Card className=" flex w-full w-[350px] flex-col gap-2 bg-muted/50">
+        <CardHeader>
+          <CardDescription className="text-sm">
+            Test credentials
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Email:</span>
+            <code className="rounded bg-background px-2 py-0.5 text-xs font-mono">
+              test@gmail.com
+            </code>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Password:</span>
+            <code className="rounded bg-background px-2 py-0.5 text-xs font-mono">
+              password
+            </code>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 export default LoginForm;
