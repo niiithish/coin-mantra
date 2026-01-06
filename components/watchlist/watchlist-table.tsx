@@ -5,7 +5,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import CreateAlertDialog from "@/components/create-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,12 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  addToWatchlist,
-  getWatchlist,
-  removeFromWatchlist,
-  type WatchlistItem,
-} from "@/lib/watchlist";
+import { useWatchlist } from "@/hooks/use-watchlist";
 
 // Coin market data from CoinGecko markets endpoint
 interface CoinMarketData {
@@ -81,7 +75,12 @@ const formatCurrency = (value: number | undefined) => {
 };
 
 const WatchlistTable = () => {
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
+  const {
+    watchlist: watchlistItems,
+    isLoading: watchlistLoading,
+    addCoin,
+    removeCoin,
+  } = useWatchlist();
   const [coinData, setCoinData] = useState<CoinMarketData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -93,10 +92,6 @@ const WatchlistTable = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load watchlist from localStorage
-  const loadWatchlist = useCallback(() => {
-    const items = getWatchlist();
-    setWatchlistItems(items);
-  }, []);
 
   // Fetch coin market data for watchlist items
   const fetchCoinData = useCallback(async () => {
@@ -171,27 +166,15 @@ const WatchlistTable = () => {
     }, 300);
   };
 
-  const handleAddCoin = (coinId: string) => {
-    const result = addToWatchlist(coinId.toLowerCase());
-
-    if (result) {
-      toast.success(`Added ${coinId} to watchlist!`);
+  const handleAddCoin = async (coinId: string) => {
+    const success = await addCoin(coinId.toLowerCase());
+    if (success) {
       handleDialogClose();
-      loadWatchlist();
-    } else {
-      toast.error("Coin is already in your watchlist.");
     }
   };
 
-  const handleRemoveCoin = (coinId: string, coinName: string) => {
-    const result = removeFromWatchlist(coinId);
-
-    if (result) {
-      toast.success(`Removed ${coinName} from watchlist`);
-      loadWatchlist();
-    } else {
-      toast.error("Failed to remove coin from watchlist");
-    }
+  const handleRemoveCoin = async (coinId: string, _coinName: string) => {
+    await removeCoin(coinId);
   };
 
   const handleDialogClose = () => {
@@ -209,9 +192,6 @@ const WatchlistTable = () => {
   };
 
   // Initial load
-  useEffect(() => {
-    loadWatchlist();
-  }, [loadWatchlist]);
 
   // Fetch coin data when watchlist changes
   useEffect(() => {
@@ -300,7 +280,7 @@ const WatchlistTable = () => {
       <Card className="h-full w-full overflow-y-scroll px-0 py-0">
         <CardContent className="px-0 py-0">
           {(() => {
-            if (loading) {
+            if (loading || watchlistLoading) {
               return (
                 <div className="flex items-center justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />

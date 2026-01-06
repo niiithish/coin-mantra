@@ -9,7 +9,12 @@ import {
   userRelations,
   verification,
 } from "./auth-schema";
-import { usersTable, watchlist } from "./schema";
+import {
+  alerts,
+  alertsRelations,
+  watchlist,
+  watchlistRelations,
+} from "./schema";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -24,7 +29,9 @@ export const db = drizzle(pool, {
     userRelations,
     sessionRelations,
     accountRelations,
-    usersTable,
     watchlist,
+    watchlistRelations,
+    alerts,
+    alertsRelations,
   },
 });

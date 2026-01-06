@@ -17,12 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  addToWatchlist,
-  getWatchlist,
-  removeFromWatchlist,
-  type WatchlistItem,
-} from "@/lib/watchlist";
+import { useWatchlist } from "@/hooks/use-watchlist";
 import { Badge } from "../ui/badge";
 
 interface CoinData {
@@ -72,7 +67,7 @@ const Watchlist = () => {
     }
     return "";
   };
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
+  const { watchlist: watchlistItems, addCoin, removeCoin } = useWatchlist();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newCoinId, setNewCoinId] = useState("");
 
@@ -133,11 +128,6 @@ const Watchlist = () => {
     }, 300);
   };
 
-  const loadWatchlist = useCallback(() => {
-    const items = getWatchlist();
-    setWatchlistItems(items);
-  }, []);
-
   const fetchCoinDetails = useCallback(async () => {
     if (watchlistItems.length === 0) {
       setCoins([]);
@@ -184,29 +174,20 @@ const Watchlist = () => {
   }, [watchlistItems]);
 
   useEffect(() => {
-    loadWatchlist();
-  }, [loadWatchlist]);
-
-  useEffect(() => {
     if (watchlistItems.length > 0) {
       fetchCoinDetails();
     }
   }, [watchlistItems, fetchCoinDetails]);
 
-  const handleAddCoin = (coinId?: string) => {
+  const handleAddCoin = async (coinId?: string) => {
     const idToAdd = coinId || newCoinId;
     if (!idToAdd.trim()) {
       return;
     }
 
-    const result = addToWatchlist(idToAdd.toLowerCase());
-
-    if (result) {
-      toast.success(`Added ${idToAdd} to watchlist!`);
+    const success = await addCoin(idToAdd.toLowerCase());
+    if (success) {
       handleDialogClose();
-      loadWatchlist();
-    } else {
-      toast.error("Coin is already in your watchlist.");
     }
   };
 
@@ -225,15 +206,8 @@ const Watchlist = () => {
     }
   };
 
-  const handleRemoveCoin = (coinId: string) => {
-    const result = removeFromWatchlist(coinId);
-
-    if (result) {
-      toast.success(`Removed ${coinId} from watchlist`);
-      loadWatchlist();
-    } else {
-      toast.error("Failed to remove coin from watchlist");
-    }
+  const handleRemoveCoin = async (coinId: string) => {
+    await removeCoin(coinId);
   };
 
   return (

@@ -92,14 +92,14 @@ const AlertList = () => {
   }, []);
 
   // Load alerts from localStorage
-  const loadAlerts = useCallback(() => {
+  const loadAlerts = useCallback(async () => {
     setLoading(true);
-    const storedAlerts = getAlerts();
+    const storedAlerts = await getAlerts();
     setAlerts(storedAlerts);
 
     // Fetch coin prices for all unique coins
     const uniqueCoinIds = [...new Set(storedAlerts.map((a) => a.coinId))];
-    fetchCoinPrices(uniqueCoinIds);
+    await fetchCoinPrices(uniqueCoinIds);
   }, [fetchCoinPrices]);
 
   // Initial load
@@ -107,14 +107,14 @@ const AlertList = () => {
     loadAlerts();
   }, [loadAlerts]);
 
-  const handleDeleteAlert = (alertId: string, alertName: string) => {
-    deleteAlert(alertId);
+  const handleDeleteAlert = async (alertId: string, alertName: string) => {
+    await deleteAlert(alertId);
     setAlerts(alerts.filter((a) => a.id !== alertId));
     toast.success(`Alert "${alertName}" deleted`);
   };
 
-  const handleEditAlert = (alertId: string) => {
-    const alert = getAlertById(alertId);
+  const handleEditAlert = async (alertId: string) => {
+    const alert = await getAlertById(alertId);
     if (alert) {
       setEditingAlert(alert);
       setIsEditDialogOpen(true);

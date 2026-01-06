@@ -1,4 +1,4 @@
-// Watchlist types and localStorage management
+// Watchlist types and API management
 
 export interface WatchlistItem {
   id: string;
@@ -6,21 +6,22 @@ export interface WatchlistItem {
   addedAt: string;
 }
 
-const WATCHLIST_STORAGE_KEY = "coinwatch_watchlist";
-
 /**
- * Get all watchlist items from localStorage
+ * Get all watchlist items from API
  */
-export function getWatchlist(): WatchlistItem[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
+export async function getWatchlist(): Promise<WatchlistItem[]> {
   try {
-    const watchlistJson = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-    return watchlistJson ? JSON.parse(watchlistJson) : [];
+    const response = await fetch("/api/watchlist");
+    if (!response.ok) {
+      if (response.status === 401) {
+        return []; // Not logged in
+      }
+      throw new Error("Failed to fetch watchlist");
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Error reading watchlist from localStorage:", error);
+    console.error("Error fetching watchlist:", error);
     return [];
   }
 }
@@ -28,80 +29,71 @@ export function getWatchlist(): WatchlistItem[] {
 /**
  * Add a coin to the watchlist
  */
-export function addToWatchlist(coinId: string): WatchlistItem | null {
-  const watchlist = getWatchlist();
-
-  // Check if coin is already in watchlist
-  if (watchlist.some((item) => item.coinId === coinId)) {
-    return null;
-  }
-
-  const newItem: WatchlistItem = {
-    id: crypto.randomUUID(),
-    coinId,
-    addedAt: new Date().toISOString(),
-  };
-
-  watchlist.push(newItem);
-
+export async function addToWatchlist(
+  coinId: string
+): Promise<WatchlistItem | null> {
   try {
-    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
+    const response = await fetch("/api/watchlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coinId: coinId.toLowerCase() }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 409) {
+        return null; // Already exists
+      }
+      throw new Error("Failed to add to watchlist");
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error("Error saving to watchlist:", error);
+    console.error("Error adding to watchlist:", error);
     return null;
   }
-
-  return newItem;
 }
 
 /**
  * Remove a coin from the watchlist by coinId
  */
-export function removeFromWatchlist(coinId: string): boolean {
-  const watchlist = getWatchlist();
-  const filteredWatchlist = watchlist.filter((item) => item.coinId !== coinId);
-
-  if (filteredWatchlist.length === watchlist.length) {
-    // Coin was not in watchlist
-    return false;
-  }
-
+export async function removeFromWatchlist(coinId: string): Promise<boolean> {
   try {
-    localStorage.setItem(
-      WATCHLIST_STORAGE_KEY,
-      JSON.stringify(filteredWatchlist)
+    const response = await fetch(
+      `/api/watchlist?coinId=${coinId.toLowerCase()}`,
+      {
+        method: "DELETE",
+      }
     );
+
+    return response.ok;
   } catch (error) {
     console.error("Error removing from watchlist:", error);
     return false;
   }
-
-  return true;
 }
 
 /**
  * Check if a coin is in the watchlist
  */
-export function isInWatchlist(coinId: string): boolean {
-  const watchlist = getWatchlist();
-  return watchlist.some((item) => item.coinId === coinId);
+export async function isInWatchlist(coinId: string): Promise<boolean> {
+  const watchlist = await getWatchlist();
+  return watchlist.some((item) => item.coinId === coinId.toLowerCase());
 }
 
 /**
  * Get all coin IDs in the watchlist
  */
-export function getWatchlistCoinIds(): string[] {
-  const watchlist = getWatchlist();
+export async function getWatchlistCoinIds(): Promise<string[]> {
+  const watchlist = await getWatchlist();
   return watchlist.map((item) => item.coinId);
 }
 
 /**
  * Clear the entire watchlist
+ * Note: This might need a specific API endpoint if implemented,
+ * for now we just return as it's not commonly used.
  */
 export function clearWatchlist(): void {
-  try {
-    localStorage.removeItem(WATCHLIST_STORAGE_KEY);
-  } catch (error) {
-    console.error("Error clearing watchlist:", error);
-  }
+  // Not implemented on server yet
+  console.warn("clearWatchlist not implemented on server");
 }

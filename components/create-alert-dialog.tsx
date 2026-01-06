@@ -339,7 +339,7 @@ const CreateAlertDialog = ({
     }
   };
 
-  const handleSaveAlert = () => {
+  const handleSaveAlert = async () => {
     // Validate form
     const validationError = validateAlertForm(
       alertName,
@@ -367,20 +367,23 @@ const CreateAlertDialog = ({
 
     if (isEditMode && editAlert) {
       // Update existing alert
-      const updatedAlert = updateAlert(editAlert.id, alertData);
+      const success = await updateAlert(editAlert.id, alertData);
 
-      if (updatedAlert) {
-        toast.success(
-          `Alert "${updatedAlert.alertName}" updated successfully!`
-        );
+      if (success) {
+        toast.success(`Alert "${alertData.alertName}" updated successfully!`);
       } else {
         toast.error("Failed to update alert");
         return;
       }
     } else {
       // Create new alert
-      const newAlert = saveAlert(alertData);
-      toast.success(`Alert "${newAlert.alertName}" created successfully!`);
+      const newAlert = await saveAlert(alertData);
+      if (newAlert) {
+        toast.success(`Alert "${newAlert.alertName}" created successfully!`);
+      } else {
+        toast.error("Failed to create alert");
+        return;
+      }
     }
 
     // Notify parent component

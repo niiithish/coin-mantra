@@ -9,7 +9,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -19,11 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  addToWatchlist,
-  getWatchlistCoinIds,
-  removeFromWatchlist,
-} from "@/lib/watchlist";
+import { useWatchlist } from "@/hooks/use-watchlist";
 
 interface SearchCoin {
   id: string;
@@ -70,36 +65,20 @@ const SearchDialog = () => {
   const [results, setResults] = useState<CoinResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [_isDefault, setIsDefault] = useState(true);
-  const [watchlistCoinIds, setWatchlistCoinIds] = useState<string[]>([]);
+  const { isInWatchlist, addCoin, removeCoin } = useWatchlist();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load watchlist coin IDs
-  const loadWatchlist = useCallback(() => {
-    const coinIds = getWatchlistCoinIds();
-    setWatchlistCoinIds(coinIds);
-  }, []);
-
-  // Check if a coin is in the watchlist
-  const isInWatchlist = (coinId: string) => watchlistCoinIds.includes(coinId);
-
   // Toggle watchlist status
-  const handleToggleWatchlist = (e: React.MouseEvent, coin: CoinResult) => {
+  const handleToggleWatchlist = async (
+    e: React.MouseEvent,
+    coin: CoinResult
+  ) => {
     e.stopPropagation(); // Prevent navigation to coin page
 
     if (isInWatchlist(coin.id)) {
-      const result = removeFromWatchlist(coin.id);
-      if (result) {
-        toast.success(`Removed ${coin.name} from watchlist`);
-        loadWatchlist();
-      }
+      await removeCoin(coin.id);
     } else {
-      const result = addToWatchlist(coin.id);
-      if (result) {
-        toast.success(`Added ${coin.name} to watchlist!`);
-        loadWatchlist();
-      } else {
-        toast.error("Coin is already in your watchlist.");
-      }
+      await addCoin(coin.id);
     }
   };
 
@@ -178,18 +157,10 @@ const SearchDialog = () => {
     }, 300);
   };
 
-  // Load watchlist and trending coins on mount
+  // Load trending coins on mount
   useEffect(() => {
-    loadWatchlist();
     fetchTrending();
-  }, [loadWatchlist, fetchTrending]);
-
-  // Reload watchlist when dialog opens
-  useEffect(() => {
-    if (open) {
-      loadWatchlist();
-    }
-  }, [open, loadWatchlist]);
+  }, [fetchTrending]);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -266,7 +237,7 @@ const SearchDialog = () => {
                           </div>
                         </button>
                         <button
-                          className="rounded-full p-1 transition-colors hover:bg-accent"
+                          className="cursor-pointer rounded-full p-1 transition-colors hover:bg-accent"
                           onClick={(e) => handleToggleWatchlist(e, coin)}
                           title={
                             isInWatchlist(coin.id)

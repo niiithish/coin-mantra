@@ -1,4 +1,4 @@
-// Alert types and localStorage management
+// Alert types and API management
 
 export interface Alert {
   id: string;
@@ -14,124 +14,122 @@ export interface Alert {
   isActive: boolean;
 }
 
-const ALERTS_STORAGE_KEY = "coinwatch_alerts";
-
 /**
- * Get all alerts from localStorage
+ * Get all alerts from API
  */
-export function getAlerts(): Alert[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
+export async function getAlerts(): Promise<Alert[]> {
   try {
-    const alertsJson = localStorage.getItem(ALERTS_STORAGE_KEY);
-    return alertsJson ? JSON.parse(alertsJson) : [];
+    const response = await fetch("/api/alerts");
+    if (!response.ok) {
+      if (response.status === 401) {
+        return []; // Not logged in
+      }
+      throw new Error("Failed to fetch alerts");
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Error reading alerts from localStorage:", error);
+    console.error("Error fetching alerts:", error);
     return [];
   }
 }
 
 /**
- * Save an alert to localStorage
+ * Save an alert to API
  */
-export function saveAlert(
+export async function saveAlert(
   alert: Omit<Alert, "id" | "createdAt" | "isActive">
-): Alert {
-  const alerts = getAlerts();
-
-  const newAlert: Alert = {
-    ...alert,
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    isActive: true,
-  };
-
-  alerts.push(newAlert);
-
+): Promise<Alert | null> {
   try {
-    localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(alerts));
-  } catch (error) {
-    console.error("Error saving alert to localStorage:", error);
-  }
+    const response = await fetch("/api/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(alert),
+    });
 
-  return newAlert;
+    if (!response.ok) {
+      throw new Error("Failed to save alert");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error saving alert:", error);
+    return null;
+  }
 }
 
 /**
  * Delete an alert by ID
  */
-export function deleteAlert(alertId: string): void {
-  const alerts = getAlerts();
-  const filteredAlerts = alerts.filter((alert) => alert.id !== alertId);
-
+export async function deleteAlert(alertId: string): Promise<boolean> {
   try {
-    localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(filteredAlerts));
+    const response = await fetch(`/api/alerts?id=${alertId}`, {
+      method: "DELETE",
+    });
+
+    return response.ok;
   } catch (error) {
-    console.error("Error deleting alert from localStorage:", error);
+    console.error("Error deleting alert:", error);
+    return false;
   }
 }
 
 /**
  * Toggle alert active status
  */
-export function toggleAlertStatus(alertId: string): Alert | null {
-  const alerts = getAlerts();
-  const alertIndex = alerts.findIndex((alert) => alert.id === alertId);
-
-  if (alertIndex === -1) {
-    return null;
+export async function toggleAlertStatus(alertId: string): Promise<boolean> {
+  const alert = await getAlertById(alertId);
+  if (!alert) {
+    return false;
   }
-
-  alerts[alertIndex].isActive = !alerts[alertIndex].isActive;
 
   try {
-    localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(alerts));
-  } catch (error) {
-    console.error("Error updating alert in localStorage:", error);
-  }
+    const response = await fetch("/api/alerts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: alertId, isActive: !alert.isActive }),
+    });
 
-  return alerts[alertIndex];
+    return response.ok;
+  } catch (error) {
+    console.error("Error toggling alert status:", error);
+    return false;
+  }
 }
 
 /**
  * Get a single alert by ID
  */
-export function getAlertById(alertId: string): Alert | null {
-  const alerts = getAlerts();
+export async function getAlertById(alertId: string): Promise<Alert | null> {
+  const alerts = await getAlerts();
   return alerts.find((alert) => alert.id === alertId) || null;
 }
 
 /**
  * Get alerts for a specific coin
  */
-export function getAlertsForCoin(coinId: string): Alert[] {
-  const alerts = getAlerts();
+export async function getAlertsForCoin(coinId: string): Promise<Alert[]> {
+  const alerts = await getAlerts();
   return alerts.filter((alert) => alert.coinId === coinId);
 }
 
 /**
  * Update an existing alert
  */
-export function updateAlert(
+export async function updateAlert(
   alertId: string,
   updates: Partial<Omit<Alert, "id" | "createdAt">>
-): Alert | null {
-  const alerts = getAlerts();
-  const alertIndex = alerts.findIndex((alert) => alert.id === alertId);
-
-  if (alertIndex === -1) {
-    return null;
-  }
-
-  alerts[alertIndex] = { ...alerts[alertIndex], ...updates };
-
+): Promise<boolean> {
   try {
-    localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(alerts));
-  } catch (error) {
-    console.error("Error updating alert in localStorage:", error);
-  }
+    const response = await fetch("/api/alerts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: alertId, ...updates }),
+    });
 
-  return alerts[alertIndex];
+    return response.ok;
+  } catch (error) {
+    console.error("Error updating alert:", error);
+    return false;
+  }
 }
