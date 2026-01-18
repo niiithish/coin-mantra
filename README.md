@@ -52,7 +52,7 @@
 ### State Management & APIs
 - **Data Fetching**: [React Query](https://tanstack.com/query/latest)
 - **Market Data**: [CoinGecko API](https://www.coingecko.com/en/api)
-- **News Data**: GNews / NewsAPI
+- **News Data**: [NewsAPI](https://newsapi.org/)
 
 ---
 
