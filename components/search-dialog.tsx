@@ -212,7 +212,7 @@ const SearchDialog = () => {
                         key={coin.id}
                       >
                         <button
-                          className="flex flex-1 cursor-pointer items-center gap-3 text-left"
+                          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
                           onClick={() => {
                             router.push(`/coin/${coin.id}`);
                             setOpen(false);
@@ -227,8 +227,8 @@ const SearchDialog = () => {
                               src={coin.image}
                             />
                           </div>
-                          <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-                            <span className="overflow-hidden text-ellipsis whitespace-nowrap font-medium text-sm uppercase">
+                          <div className="flex max-w-[200px] min-w-0 flex-1 flex-col gap-1">
+                            <span className="truncate font-medium text-sm uppercase">
                               {coin.name}
                             </span>
                             <span className="truncate text-muted-foreground text-xs">

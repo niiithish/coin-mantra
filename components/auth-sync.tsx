@@ -1,7 +1,7 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { useQueryClient } from "react-query";
 import { ALERTS_QUERY_KEY } from "@/hooks/use-alerts";
 import { WATCHLIST_QUERY_KEY } from "@/hooks/use-watchlist";
 import { syncAlertsToDb } from "@/lib/alerts";
@@ -20,8 +20,8 @@ export function AuthSync() {
         try {
           await Promise.all([syncWatchlistToDb(), syncAlertsToDb()]);
           // Refresh queries to show synced data
-          queryClient.invalidateQueries(WATCHLIST_QUERY_KEY);
-          queryClient.invalidateQueries(ALERTS_QUERY_KEY);
+          queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEY });
+          queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
         } catch (error) {
           console.error("Failed to sync local data to DB:", error);
         }

@@ -3,7 +3,6 @@
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -13,18 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-interface News {
-  source: {
-    name: string;
-  };
-  title: string;
-  description: string;
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  content: string;
-}
+import { useNews, type News } from "@/hooks/use-news";
 
 // Helper function to format time ago
 const formatTimeAgo = (dateString: string): string => {
@@ -103,81 +91,6 @@ const NewsCard = ({ news, ticker }: { news: News; ticker?: string }) => {
   );
 };
 
-const fetchNewsFromAPI = async () => {
-  const response = await fetch(
-    `/api/newsapi?q=${encodeURIComponent("crypto")}`
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to fetch news");
-  }
-
-  return response.json();
-};
-
-const useNews = () => {
-  const [news, setNews] = useState<News[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    let loadInProgress = false;
-
-    const handleSuccess = (data: unknown) => {
-      if (!isMounted) {
-        return;
-      }
-      setNews((data as { articles?: News[] }).articles?.slice(0, 6) || []);
-    };
-
-    const handleError = (err: unknown) => {
-      if (!isMounted) {
-        return;
-      }
-      console.error("Error fetching news:", err);
-      setError(err instanceof Error ? err.message : "Failed to load news");
-      setNews([]);
-    };
-
-    const finishLoading = () => {
-      if (!isMounted) {
-        return;
-      }
-      setLoading(false);
-    };
-
-    const loadNews = async () => {
-      if (loadInProgress || !isMounted) {
-        return;
-      }
-
-      loadInProgress = true;
-      setLoading(true);
-      setError(null);
-
-      try {
-        const data = await fetchNewsFromAPI();
-        handleSuccess(data);
-      } catch (err) {
-        handleError(err);
-      } finally {
-        finishLoading();
-        loadInProgress = false;
-      }
-    };
-
-    loadNews();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  return { news, loading, error };
-};
-
 const NewsGrid = ({ news }: { news: News[] }) => {
   return (
     <div className="w-full">
@@ -213,18 +126,36 @@ const NewsEmptyState = () => (
   </div>
 );
 
-const WatchlistNews = () => {
-  const { news, error } = useNews();
+const NewsLoadingState = () => (
+  <div className="w-full">
+    <h2 className="mb-6 font-semibold text-xl">Latest News</h2>
+    <Card>
+      <CardContent className="flex items-center justify-center py-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </CardContent>
+    </Card>
+  </div>
+);
 
-  if (error) {
-    return <NewsErrorState error={error} />;
+const WatchlistNews = () => {
+  const { data: news = [], error, isLoading } = useNews("crypto");
+
+  // Limit to 6 articles
+  const displayNews = news.slice(0, 6);
+
+  if (isLoading) {
+    return <NewsLoadingState />;
   }
 
-  if (news.length === 0) {
+  if (error) {
+    return <NewsErrorState error={error instanceof Error ? error.message : "Failed to load news"} />;
+  }
+
+  if (displayNews.length === 0) {
     return <NewsEmptyState />;
   }
 
-  return <NewsGrid news={news} />;
+  return <NewsGrid news={displayNews} />;
 };
 
 export default WatchlistNews;

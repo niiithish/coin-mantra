@@ -2,9 +2,10 @@
 
 import type { ChartData } from "chart.js";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LineChart } from "@/components/ui/line-chart";
+import { useCoinMarketChart } from "@/hooks/use-coins";
 
 interface PriceChartProps {
   coinId: string;
@@ -65,98 +66,52 @@ const PriceChart = ({
   priceChangePercentage24h,
 }: PriceChartProps) => {
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>("1");
-  const [error, setError] = useState<string | null>(null);
-  const [chartData, setChartData] = useState<ChartData<"line">>({
-    labels: [],
-    datasets: [
-      {
-        label: "Price",
-        data: [],
-        fill: false,
-        borderColor: "#0FEDBE",
-        backgroundColor: "#0FEDBE",
-      },
-    ],
-  });
 
-  const fetchChartData = useCallback(async () => {
-    if (!coinId) {
-      return;
-    }
+  // Determine interval based on timeframe
+  const interval = selectedTimeFrame === "1" ? undefined : "daily";
 
-    try {
-      setError(null);
+  // Fetch chart data using the hook
+  const { data: chartResult, error, refetch } = useCoinMarketChart(
+    coinId,
+    selectedTimeFrame,
+    interval
+  );
 
-      // Determine interval based on timeframe
-      const interval = selectedTimeFrame === "1" ? "" : "&interval=daily";
+  // Build chart data
+  const chartData: ChartData<"line"> = useMemo(() => {
+    const lineColor = "#0FEDBE";
 
-      const response = await fetch(
-        `/api/coingecko?endpoint=/coins/${coinId}/market_chart&vs_currency=usd&days=${selectedTimeFrame}${interval}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch chart data");
-      }
-
-      const result = await response.json();
-
-      if (!(result.prices && Array.isArray(result.prices))) {
-        throw new Error("Invalid response format");
-      }
-
-      // Format labels based on timeframe
-      let labels = result.prices.map((item: [number, number]) => {
-        const date = new Date(item[0]);
-        if (selectedTimeFrame === "1") {
-          return date.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-        }
-        return date.toLocaleDateString("en-US", {
-          day: "numeric",
-          month: "short",
-        });
-      });
-
-      let prices = result.prices.map((item: [number, number]) => item[1]);
-
-      // Remove duplicate last data point if it has same date as previous
-      if (labels.length > 1 && labels.at(-1) === labels.at(-2)) {
-        labels = labels.slice(0, -1);
-        prices = prices.slice(0, -1);
-      }
-
-      const lineColor = "#0FEDBE";
-
-      setChartData({
-        labels,
+    if (!chartResult) {
+      return {
+        labels: [],
         datasets: [
           {
             label: "Price",
-            data: prices,
+            data: [],
             fill: false,
             borderColor: lineColor,
             backgroundColor: lineColor,
           },
         ],
-      });
-    } catch (err) {
-      console.error("Error fetching chart data:", err);
-      setError("Failed to load chart data");
+      };
     }
-  }, [coinId, selectedTimeFrame]);
 
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+    return {
+      labels: chartResult.labels,
+      datasets: [
+        {
+          label: "Price",
+          data: chartResult.prices,
+          fill: false,
+          borderColor: lineColor,
+          backgroundColor: lineColor,
+        },
+      ],
+    };
+  }, [chartResult]);
 
   const priceChangeFormatted = formatPriceChange(priceChange24h);
   const percentageFormatted = formatPercentage(priceChangePercentage24h);
-  const _isPositive =
-    priceChangePercentage24h !== undefined
-      ? priceChangePercentage24h >= 0
-      : true;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -183,9 +138,8 @@ const PriceChart = ({
                 {formatCurrency(currentPrice)}
               </span>
               <span
-                className={`font-medium text-sm ${
-                  priceChangeFormatted ? "text-[#0FEDBE]" : "text-[#FF495B]"
-                }`}
+                className={`font-medium text-sm ${priceChangeFormatted ? "text-[#0FEDBE]" : "text-[#FF495B]"
+                  }`}
               >
                 {priceChangeFormatted.text} {percentageFormatted.text}
               </span>
@@ -197,11 +151,10 @@ const PriceChart = ({
         <div className="flex items-center gap-1 rounded-lg bg-background/50 p-1">
           {(Object.keys(timeFrameLabels) as TimeFrame[]).map((timeFrame) => (
             <button
-              className={`cursor-pointer rounded-md px-2 py-1 font-medium text-xs transition-all duration-200 ${
-                selectedTimeFrame === timeFrame
+              className={`cursor-pointer rounded-md px-2 py-1 font-medium text-xs transition-all duration-200 ${selectedTimeFrame === timeFrame
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+                }`}
               key={timeFrame}
               onClick={() => setSelectedTimeFrame(timeFrame)}
               type="button"
@@ -216,10 +169,12 @@ const PriceChart = ({
         {error && (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center text-muted-foreground">
-              <p className="font-medium text-destructive text-lg">{error}</p>
+              <p className="font-medium text-destructive text-lg">
+                {error instanceof Error ? error.message : "Failed to load chart data"}
+              </p>
               <button
                 className="mt-2 text-primary text-sm hover:underline"
-                onClick={() => fetchChartData()}
+                onClick={() => refetch()}
                 type="button"
               >
                 Try again

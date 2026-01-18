@@ -4,8 +4,7 @@ import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -17,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useCoinMarketData } from "@/hooks/use-coins";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { Badge } from "../ui/badge";
 
@@ -24,13 +24,7 @@ interface CoinData {
   id: string;
   symbol: string;
   name: string;
-  image?:
-    | {
-        thumb?: string;
-        small?: string;
-        large?: string;
-      }
-    | string;
+  image?: string;
   market_data?: {
     current_price?: {
       usd?: number;
@@ -56,18 +50,29 @@ interface SearchResponse {
 
 const Watchlist = () => {
   const router = useRouter();
-  const [coins, setCoins] = useState<CoinData[]>([]);
+  const { watchlist: watchlistItems, addCoin, removeCoin } = useWatchlist();
+
+  // Fetch coin market data for all watchlist items
+  const coinIds = watchlistItems.map((item) => item.coinId);
+  const { data: coinMarketData = [], isLoading: coinsLoading } = useCoinMarketData(coinIds);
+
+  // Map the market data to the expected format
+  const coins: CoinData[] = coinMarketData.map((coin) => ({
+    id: coin.id,
+    symbol: coin.symbol,
+    name: coin.name,
+    image: coin.image,
+    market_data: {
+      current_price: { usd: coin.current_price },
+      price_change_24h: coin.current_price * (coin.price_change_percentage_24h / 100),
+      price_change_percentage_24h: coin.price_change_percentage_24h,
+    },
+  }));
 
   const getImageUrl = (coin: CoinData): string => {
-    if (typeof coin.image === "string") {
-      return coin.image;
-    }
-    if (coin.image) {
-      return coin.image.small || coin.image.large || coin.image.thumb || "";
-    }
-    return "";
+    return coin.image || "";
   };
-  const { watchlist: watchlistItems, addCoin, removeCoin } = useWatchlist();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newCoinId, setNewCoinId] = useState("");
 
@@ -128,57 +133,6 @@ const Watchlist = () => {
     }, 300);
   };
 
-  const fetchCoinDetails = useCallback(async () => {
-    if (watchlistItems.length === 0) {
-      setCoins([]);
-      return;
-    }
-
-    const coinPromises = watchlistItems.map(async (item) => {
-      try {
-        const response = await fetch(
-          `/api/coingecko?endpoint=/coins/${item.coinId}`
-        );
-
-        if (!response.ok) {
-          toast.error(
-            `Error fetching price for coin "${item.coinId}": HTTP ${response.status} - ${response.statusText}`
-          );
-          return null;
-        }
-
-        const data: CoinData = await response.json();
-
-        if (!data.market_data?.current_price?.usd) {
-          toast.error(
-            `Error fetching price for coin "${item.coinId}": Price data not available`
-          );
-        }
-
-        return data;
-      } catch (error) {
-        console.error(`Error fetching price for coin "${item.coinId}":`, error);
-        return null;
-      }
-    });
-
-    const results = await Promise.all(coinPromises);
-    const validCoins = results.filter(
-      (coin): coin is CoinData =>
-        coin !== null &&
-        coin.id !== undefined &&
-        coin.name !== undefined &&
-        coin.market_data?.current_price?.usd !== undefined
-    );
-    setCoins(validCoins);
-  }, [watchlistItems]);
-
-  useEffect(() => {
-    if (watchlistItems.length > 0) {
-      fetchCoinDetails();
-    }
-  }, [watchlistItems, fetchCoinDetails]);
-
   const handleAddCoin = async (coinId?: string) => {
     const idToAdd = coinId || newCoinId;
     if (!idToAdd.trim()) {
@@ -220,78 +174,84 @@ const Watchlist = () => {
       </div>
       <Card className="min-h-0 flex-1 content-start items-start gap-4 overflow-auto p-4">
         <div className="grid w-full grid-cols-3 gap-4">
-          {coins.map((coin) => (
-            <Card className="bg-secondary/20" key={coin.id}>
-              <CardContent className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="rounded-full">
-                    <Image
-                      alt={coin.name}
-                      className="rounded-full"
-                      height={32}
+          {coinsLoading && watchlistItems.length > 0 ? (
+            <div className="col-span-3 flex items-center justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : (
+            coins.map((coin) => (
+              <Card className="bg-secondary/20" key={coin.id}>
+                <CardContent className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="rounded-full">
+                      <Image
+                        alt={coin.name}
+                        className="rounded-full"
+                        height={32}
+                        onClick={() => {
+                          router.push(`/coin/${coin.id}`);
+                        }}
+                        src={getImageUrl(coin)}
+                        style={{ height: "auto" }}
+                        width={32}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="rounded-full">
+                        <HugeiconsIcon
+                          className="cursor-pointer"
+                          color="#63a401"
+                          fill="#63a401"
+                          icon={StarIcon}
+                          onClick={() => handleRemoveCoin(coin.id)}
+                          size={18}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      className="cursor-pointer text-left font-regular text-foreground/80 text-xs hover:text-primary"
                       onClick={() => {
                         router.push(`/coin/${coin.id}`);
                       }}
-                      src={getImageUrl(coin)}
-                      style={{ height: "auto" }}
-                      width={32}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="rounded-full">
-                      <HugeiconsIcon
-                        className="cursor-pointer"
-                        color="#63a401"
-                        fill="#63a401"
-                        icon={StarIcon}
-                        onClick={() => handleRemoveCoin(coin.id)}
-                        size={18}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button
-                    className="cursor-pointer text-left font-regular text-foreground/80 text-xs hover:text-primary"
-                    onClick={() => {
-                      router.push(`/coin/${coin.id}`);
-                    }}
-                    type="button"
-                  >
-                    {coin.name}
-                  </button>
-                  {coin.market_data?.current_price?.usd ? (
-                    <div className="font-semibold text-lg">
-                      ${coin.market_data.current_price.usd.toFixed(2)}
-                    </div>
-                  ) : null}
-                  {coin.market_data?.price_change_percentage_24h !==
-                  undefined ? (
-                    <div
-                      className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
+                      type="button"
                     >
-                      <span>
-                        {coin.market_data.price_change_percentage_24h > 0
-                          ? "+"
-                          : ""}
-                        {coin.market_data.price_change_24h?.toFixed(2)}
-                      </span>
-                      <span className="opacity-90">
-                        (
-                        {coin.market_data.price_change_percentage_24h > 0
-                          ? "+"
-                          : ""}
-                        {coin.market_data.price_change_percentage_24h.toFixed(
-                          2
-                        )}
-                        %)
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      {coin.name}
+                    </button>
+                    {coin.market_data?.current_price?.usd ? (
+                      <div className="font-semibold text-lg">
+                        ${coin.market_data.current_price.usd.toFixed(2)}
+                      </div>
+                    ) : null}
+                    {coin.market_data?.price_change_percentage_24h !==
+                      undefined ? (
+                      <div
+                        className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
+                      >
+                        <span>
+                          {coin.market_data.price_change_percentage_24h > 0
+                            ? "+"
+                            : ""}
+                          {coin.market_data.price_change_24h?.toFixed(2)}
+                        </span>
+                        <span className="opacity-90">
+                          (
+                          {coin.market_data.price_change_percentage_24h > 0
+                            ? "+"
+                            : ""}
+                          {coin.market_data.price_change_percentage_24h.toFixed(
+                            2
+                          )}
+                          %)
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
           <Dialog onOpenChange={handleDialogOpenChange} open={dialogOpen}>
             <DialogTrigger>
               <Card className="group h-full cursor-pointer border-dashed bg-secondary/20 transition-all duration-300 hover:border-primary/50 hover:bg-secondary/40">

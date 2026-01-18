@@ -4,7 +4,7 @@ import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import CreateAlertDialog from "@/components/create-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,19 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCoinMarketData } from "@/hooks/use-coins";
 import { useWatchlist } from "@/hooks/use-watchlist";
-
-// Coin market data from CoinGecko markets endpoint
-interface CoinMarketData {
-  id: string;
-  symbol: string;
-  name: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  total_volume: number;
-  price_change_percentage_24h: number;
-}
 
 interface SearchCoin {
   id: string;
@@ -81,8 +70,12 @@ const WatchlistTable = () => {
     addCoin,
     removeCoin,
   } = useWatchlist();
-  const [coinData, setCoinData] = useState<CoinMarketData[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Fetch coin market data for all watchlist items
+  const coinIds = watchlistItems.map((item) => item.coinId);
+  const { data: coinData = [], isLoading: coinsLoading } = useCoinMarketData(coinIds);
+
+  const loading = watchlistLoading || coinsLoading;
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Search state
@@ -90,33 +83,6 @@ const WatchlistTable = () => {
   const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Load watchlist from localStorage
-
-  // Fetch coin market data for watchlist items
-  const fetchCoinData = useCallback(async () => {
-    if (watchlistItems.length === 0) {
-      setCoinData([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const coinIds = watchlistItems.map((item) => item.coinId).join(",");
-      const response = await fetch(
-        `/api/coingecko?endpoint=/coins/markets&vs_currency=usd&ids=${coinIds}&price_change_percentage=24h`
-      );
-
-      if (response.ok) {
-        const data: CoinMarketData[] = await response.json();
-        setCoinData(data);
-      }
-    } catch (error) {
-      console.error("Error fetching coin data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [watchlistItems]);
 
   // Debounced search function
   const searchCoins = useCallback(
@@ -190,13 +156,6 @@ const WatchlistTable = () => {
       handleDialogClose();
     }
   };
-
-  // Initial load
-
-  // Fetch coin data when watchlist changes
-  useEffect(() => {
-    fetchCoinData();
-  }, [fetchCoinData]);
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
@@ -280,7 +239,7 @@ const WatchlistTable = () => {
       <Card className="h-full w-full overflow-y-scroll px-0 py-0">
         <CardContent className="px-0 py-0">
           {(() => {
-            if (loading || watchlistLoading) {
+            if (loading) {
               return (
                 <div className="flex items-center justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />

@@ -1,26 +1,15 @@
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+"use client";
 
-interface News {
-  source: {
-    name: string;
-  };
-  title: string;
-  description: string;
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  content: string;
-}
+import Image from "next/image";
+import { Card, CardContent } from "@/components/ui/card";
+import { useCryptoNews } from "@/hooks/use-news";
 
 interface FinancialNewsProps {
   coinName?: string;
 }
 
 const FinancialNews = ({ coinName }: FinancialNewsProps) => {
-  const [news, setNews] = useState<News[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const { data: news = [], error, isLoading } = useCryptoNews(coinName);
 
   // Helper function to format date
   const formatDate = (dateString: string) => {
@@ -33,34 +22,16 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
     }
   };
 
-  useEffect(() => {
-    if (coinName === undefined) {
-      return; // Wait for coinData to be available
-    }
-
-    const fetchNews = async () => {
-      try {
-        setError(null);
-        const query = coinName ? encodeURIComponent(coinName) : "crypto";
-        const response = await fetch(`/api/newsapi?q=${query}-crypto`, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to fetch news");
-        }
-
-        const data = await response.json();
-        setNews(data.articles || []);
-      } catch (err) {
-        console.error("Error fetching news:", err);
-        setError(err instanceof Error ? err.message : "Failed to load news");
-        setNews([]);
-      }
-    };
-    fetchNews();
-  }, [coinName]);
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Card className="h-full overflow-y-scroll">
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Show error state
   if (error) {
@@ -68,7 +39,9 @@ const FinancialNews = ({ coinName }: FinancialNewsProps) => {
       <Card className="overflow-y-scroll">
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-center justify-center py-8">
-            <p className="text-destructive text-sm">Error: {error}</p>
+            <p className="text-destructive text-sm">
+              Error: {error instanceof Error ? error.message : "Failed to load news"}
+            </p>
           </div>
         </CardContent>
       </Card>

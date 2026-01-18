@@ -4,7 +4,6 @@ import { ArrowRight02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef } from "react";
-import { useInfiniteQuery } from "react-query";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -14,25 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-interface News {
-  source: {
-    name: string;
-  };
-  title: string;
-  description: string;
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  content: string;
-}
-
-interface NewsResponse {
-  articles: News[];
-  totalResults: number;
-  page: number;
-  pageSize: number;
-}
+import { useInfiniteNews, type News } from "@/hooks/use-news";
 
 // Helper function to format time ago
 const formatTimeAgo = (dateString: string): string => {
@@ -159,24 +140,6 @@ const NewsCardSkeleton = () => {
   );
 };
 
-// Fetch news with pagination
-const fetchNews = async ({
-  pageParam = 1,
-}: {
-  pageParam?: number;
-}): Promise<NewsResponse> => {
-  const response = await fetch(
-    `/api/newsapi?q=${encodeURIComponent("crypto")}&page=${pageParam}&pageSize=12`
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to fetch news");
-  }
-
-  return response.json();
-};
-
 // Loading Spinner Component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
@@ -223,13 +186,7 @@ const News = () => {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteQuery<NewsResponse, Error>("news", fetchNews, {
-    getNextPageParam: (lastPage) => {
-      const totalPages = Math.ceil(lastPage.totalResults / lastPage.pageSize);
-      const nextPage = lastPage.page + 1;
-      return nextPage <= totalPages ? nextPage : undefined;
-    },
-  });
+  } = useInfiniteNews("crypto", 12);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {

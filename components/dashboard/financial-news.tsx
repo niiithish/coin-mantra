@@ -1,47 +1,14 @@
 "use client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface News {
-  source: {
-    name: string;
-  };
-  title: string;
-  description: string;
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  content: string;
-}
+import { useNews } from "@/hooks/use-news";
 
 const FinancialNews = () => {
   const router = useRouter();
-  const [news, setNews] = useState<News[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const { data: news = [], error, isLoading } = useNews("crypto");
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setError(null);
-        const response = await fetch("/api/newsapi");
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch news");
-        }
-
-        setNews(data.articles || []);
-      } catch (err) {
-        console.error("Error fetching news:", err);
-        setError(err instanceof Error ? err.message : "Failed to load news");
-        setNews([]);
-      }
-    };
-    fetchNews();
-  }, []);
   return (
     <div className="flex h-full w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
@@ -52,12 +19,19 @@ const FinancialNews = () => {
       </div>
       <Card className="min-h-0 flex-1 overflow-y-auto">
         <CardContent className="flex flex-col gap-3">
-          {error && (
+          {isLoading && (
             <div className="flex items-center justify-center py-8">
-              <p className="text-destructive text-sm">{error}</p>
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           )}
-          {news.length === 0 && (
+          {error && (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-destructive text-sm">
+                {error instanceof Error ? error.message : "Failed to load news"}
+              </p>
+            </div>
+          )}
+          {!isLoading && !error && news.length === 0 && (
             <div className="flex items-center justify-center py-8">
               <p className="text-muted-foreground text-sm">No news available</p>
             </div>

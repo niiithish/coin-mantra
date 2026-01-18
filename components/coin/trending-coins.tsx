@@ -2,41 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
-interface TrendingCoinItem {
-  id: string;
-  coin_id: number;
-  name: string;
-  symbol: string;
-  market_cap_rank: number;
-  thumb: string;
-  small: string;
-  large: string;
-  slug: string;
-  price_btc: number;
-  score: number;
-  data: {
-    price: number;
-    price_btc: string;
-    price_change_percentage_24h: Record<string, number>;
-    market_cap: string;
-    market_cap_btc: string;
-    total_volume: string;
-    total_volume_btc: string;
-    sparkline: string;
-    content: string | null;
-  };
-}
-
-interface TrendingCoin {
-  item: TrendingCoinItem;
-}
-
-interface TrendingResponse {
-  coins: TrendingCoin[];
-}
+import { useTrendingCoins } from "@/hooks/use-trending";
 
 interface TrendingCoinsProps {
   currentCoinId?: string;
@@ -72,40 +39,36 @@ const formatCurrency = (value: number | undefined) => {
 };
 
 const TrendingCoins = ({ currentCoinId }: TrendingCoinsProps) => {
-  const [coins, setCoins] = useState<TrendingCoin[]>([]);
-  const [_error, setError] = useState<string | null>(null);
+  const { data: coins = [], isLoading, error } = useTrendingCoins({
+    excludeCoinId: currentCoinId,
+    limit: 8,
+  });
 
-  useEffect(() => {
-    const fetchTrendingCoins = async () => {
-      try {
-        setError(null);
+  if (isLoading) {
+    return (
+      <Card className="h-full overflow-y-scroll">
+        <CardHeader>
+          <h2 className="font-bold text-base text-foreground">Trending Coins</h2>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </CardContent>
+      </Card>
+    );
+  }
 
-        const response = await fetch(
-          "/api/coingecko?endpoint=/search/trending"
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch trending coins");
-        }
-
-        const data: TrendingResponse = await response.json();
-
-        // Filter out the current coin if provided
-        const filteredData = currentCoinId
-          ? data.coins.filter((coin) => coin.item.id !== currentCoinId)
-          : data.coins;
-
-        setCoins(filteredData.slice(0, 8));
-      } catch (err) {
-        console.error("Error fetching trending coins:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load trending coins"
-        );
-      }
-    };
-
-    fetchTrendingCoins();
-  }, [currentCoinId]);
+  if (error) {
+    return (
+      <Card className="h-full overflow-y-scroll">
+        <CardHeader>
+          <h2 className="font-bold text-base text-foreground">Trending Coins</h2>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <p className="text-destructive text-sm">Failed to load trending coins</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full overflow-y-scroll">
@@ -125,11 +88,10 @@ const TrendingCoins = ({ currentCoinId }: TrendingCoinsProps) => {
                 key={coin.item.id}
               >
                 <div
-                  className={`flex items-center justify-between px-4 py-3 transition-colors hover:bg-accent/30 ${
-                    index !== coins.length - 1
+                  className={`flex items-center justify-between px-4 py-3 transition-colors hover:bg-accent/30 ${index !== coins.length - 1
                       ? "border-border/30 border-b"
                       : ""
-                  }`}
+                    }`}
                 >
                   {/* Left side: Logo, Name, Price */}
                   <div className="flex items-center gap-3">
@@ -159,9 +121,8 @@ const TrendingCoins = ({ currentCoinId }: TrendingCoinsProps) => {
                       {coin.item.symbol}
                     </span>
                     <span
-                      className={`font-medium text-xs ${
-                        isPositive ? "text-emerald-400" : "text-red-400"
-                      }`}
+                      className={`font-medium text-xs ${isPositive ? "text-emerald-400" : "text-red-400"
+                        }`}
                     >
                       {isPositive ? "+" : ""}
                       {priceChange.toFixed(2)}%
