@@ -4,7 +4,7 @@ import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import CreateAlertDialog from "@/components/create-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,20 +27,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCoinMarketData } from "@/hooks/use-coins";
+import { useCoinSearch } from "@/hooks/use-coin-search";
 import { useWatchlist } from "@/hooks/use-watchlist";
-
-interface SearchCoin {
-  id: string;
-  name: string;
-  symbol: string;
-  market_cap_rank: number | null;
-  thumb: string;
-  large: string;
-}
-
-interface SearchResponse {
-  coins: SearchCoin[];
-}
 
 const formatCurrency = (value: number | undefined) => {
   if (value === undefined) {
@@ -78,64 +66,31 @@ const WatchlistTable = () => {
   const loading = watchlistLoading || coinsLoading;
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Use the shared search hook
+  const {
+    searchQuery,
+    searchResults,
+    isSearching,
+    handleSearchChange,
+    clearSearch,
+  } = useCoinSearch({ excludeCoinIds: coinIds });
 
-  // Debounced search function
-  const searchCoins = useCallback(
-    async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsSearching(true);
-      try {
-        const response = await fetch(
-          `/api/coingecko?endpoint=/search&query=${encodeURIComponent(query)}`
-        );
-
-        if (!response.ok) {
-          setSearchResults([]);
-          return;
-        }
-
-        const data: SearchResponse = await response.json();
-        // Filter out coins already in watchlist
-        const filteredCoins = data.coins.filter(
-          (coin) => !watchlistItems.some((item) => item.coinId === coin.id)
-        );
-        setSearchResults(filteredCoins.slice(0, 10));
-      } catch (error) {
-        console.error("Error searching coins:", error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
+  // Helper for keyboard navigation
+  const handleKeyPress = useCallback(
+    (callback: () => void) => (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
       }
     },
-    [watchlistItems]
+    []
   );
-
-  // Handle search input with debounce
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      searchCoins(value);
-    }, 300);
-  };
 
   const handleAddCoin = async (coinId: string) => {
     const success = await addCoin(coinId.toLowerCase());
     if (success) {
-      handleDialogClose();
+      setDialogOpen(false);
+      clearSearch();
     }
   };
 
@@ -143,17 +98,12 @@ const WatchlistTable = () => {
     await removeCoin(coinId);
   };
 
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setSearchQuery("");
-    setSearchResults([]);
-  };
-
   const handleDialogOpenChange = (open: boolean) => {
     if (open) {
       setDialogOpen(true);
     } else {
-      handleDialogClose();
+      setDialogOpen(false);
+      clearSearch();
     }
   };
 
@@ -192,16 +142,20 @@ const WatchlistTable = () => {
 
               {/* Search Results */}
               {searchResults.length > 0 && (
-                <div className="max-h-64 gap-2 overflow-y-auto rounded-sm">
+                <div className="max-h-64 gap-2 overflow-y-auto rounded-sm" role="listbox">
                   {searchResults.map((coin) => (
                     <Card
+                      aria-label={`Add ${coin.name} (${coin.symbol}) to watchlist`}
                       className="cursor-pointer rounded-none"
                       key={coin.id}
                       onClick={() => handleAddCoin(coin.id)}
+                      onKeyDown={handleKeyPress(() => handleAddCoin(coin.id))}
+                      role="option"
+                      tabIndex={0}
                     >
                       <CardContent className="flex gap-4">
                         <Image
-                          alt={coin.name}
+                          alt={`${coin.name} logo`}
                           className="rounded-full"
                           height={24}
                           src={coin.large}
@@ -238,102 +192,98 @@ const WatchlistTable = () => {
       </div>
       <Card className="h-full w-full overflow-y-scroll px-0 py-0">
         <CardContent className="px-0 py-0">
-          {(() => {
-            if (loading) {
-              return (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              );
-            }
-            if (coinData.length === 0) {
-              return (
-                <div className="flex flex-col items-center justify-center gap-2 py-8">
-                  <p className="text-muted-foreground text-sm">
-                    Your watchlist is empty
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    Add coins to start tracking
-                  </p>
-                </div>
-              );
-            }
-            return (
-              <Table>
-                <TableHeader className="bg-secondary/20">
-                  <TableRow>
-                    <TableHead />
-                    <TableHead>Name</TableHead>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>24h Change</TableHead>
-                    <TableHead>Market Cap</TableHead>
-                    <TableHead>24h Volume</TableHead>
-                    <TableHead>Alert</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {coinData.map((coin) => (
-                    <TableRow className="text-sm" key={coin.id}>
-                      <TableCell className="py-4 align-center">
-                        <Button
-                          className="rounded-full"
-                          onClick={() => handleRemoveCoin(coin.id, coin.name)}
-                          variant="ghost"
-                        >
-                          <HugeiconsIcon
-                            color="#63a401"
-                            fill="#63a401"
-                            icon={StarIcon}
-                            size={12}
-                          />
-                        </Button>
-                      </TableCell>
-                      <TableCell className="py-4 align-center">
-                        <Link href={`/coin/${coin.id}`}>
-                          <div className="flex flex-row items-center gap-2">
-                            <Image
-                              alt={coin.name}
-                              className="rounded-full"
-                              height={24}
-                              src={coin.image}
-                              width={24}
-                            />
-                            <p className="hover:underline">{coin.name}</p>
-                          </div>
-                        </Link>
-                      </TableCell>
-                      <TableCell className="py-4 align-center uppercase">
-                        {coin.symbol}
-                      </TableCell>
-                      <TableCell className="py-4 align-center">
-                        {formatCurrency(coin.current_price)}
-                      </TableCell>
-                      <TableCell
-                        className={`py-4 align-center ${coin.price_change_percentage_24h >= 0 ? "text-green-500" : "text-red-500"}`}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : coinData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8">
+              <p className="text-muted-foreground text-sm">
+                Your watchlist is empty
+              </p>
+              <p className="text-muted-foreground text-sm">
+                Add coins to start tracking
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader className="bg-secondary/20">
+                <TableRow>
+                  <TableHead />
+                  <TableHead>Name</TableHead>
+                  <TableHead>Symbol</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>24h Change</TableHead>
+                  <TableHead>Market Cap</TableHead>
+                  <TableHead>24h Volume</TableHead>
+                  <TableHead>Alert</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coinData.map((coin) => (
+                  <TableRow className="text-sm" key={coin.id}>
+                    <TableCell className="py-4 align-center">
+                      <Button
+                        aria-label={`Remove ${coin.name} from watchlist`}
+                        className="rounded-full"
+                        onClick={() => handleRemoveCoin(coin.id, coin.name)}
+                        variant="ghost"
                       >
-                        {coin.price_change_percentage_24h >= 0 ? "+" : ""}
-                        {coin.price_change_percentage_24h?.toFixed(2)}%
-                      </TableCell>
-                      <TableCell className="py-4 align-center">
-                        {formatCurrency(coin.market_cap)}
-                      </TableCell>
-                      <TableCell className="py-4 align-center">
-                        {formatCurrency(coin.total_volume)}
-                      </TableCell>
-                      <TableCell className="px-4 py-4 align-center">
-                        <CreateAlertDialog
-                          coinId={coin.id}
-                          coinName={coin.name}
-                          coinSymbol={coin.symbol}
+                        <HugeiconsIcon
+                          color="#63a401"
+                          fill="#63a401"
+                          icon={StarIcon}
+                          size={12}
                         />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            );
-          })()}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="py-4 align-center">
+                      <Link href={`/coin/${coin.id}`}>
+                        <div className="flex flex-row items-center gap-2">
+                          <Image
+                            alt={`${coin.name} logo`}
+                            className="rounded-full"
+                            height={24}
+                            src={coin.image}
+                            width={24}
+                          />
+                          <p className="hover:underline">{coin.name}</p>
+                        </div>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="py-4 align-center uppercase">
+                      {coin.symbol}
+                    </TableCell>
+                    <TableCell className="py-4 align-center">
+                      {formatCurrency(coin.current_price)}
+                    </TableCell>
+                    <TableCell
+                      className={`py-4 align-center ${coin.price_change_percentage_24h >= 0 ? "text-green-500" : "text-red-500"}`}
+                    >
+                      <span aria-hidden="true">
+                        {coin.price_change_percentage_24h >= 0 ? "▲" : "▼"}
+                      </span>{" "}
+                      {coin.price_change_percentage_24h >= 0 ? "+" : ""}
+                      {coin.price_change_percentage_24h?.toFixed(2)}%
+                    </TableCell>
+                    <TableCell className="py-4 align-center">
+                      {formatCurrency(coin.market_cap)}
+                    </TableCell>
+                    <TableCell className="py-4 align-center">
+                      {formatCurrency(coin.total_volume)}
+                    </TableCell>
+                    <TableCell className="px-4 py-4 align-center">
+                      <CreateAlertDialog
+                        coinId={coin.id}
+                        coinName={coin.name}
+                        coinSymbol={coin.symbol}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

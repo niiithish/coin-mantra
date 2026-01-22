@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthSync } from "@/components/auth-sync";
+import { ErrorBoundary } from "@/components/error-boundary";
 import Header from "@/components/header";
 import { QueryProvider } from "@/components/query-provider";
 
@@ -33,7 +34,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthSync />
           <Header />
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </QueryProvider>
       </body>
     </html>

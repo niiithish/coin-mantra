@@ -2,16 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 
 // Types
 interface MarketData {
-    current_price: { [key: string]: number };
+    current_price: { [currency: string]: number };
     price_change_24h: number;
     price_change_percentage_24h: number;
-    market_cap: { [key: string]: number };
-    total_volume: { [key: string]: number };
+    market_cap: { [currency: string]: number };
+    total_volume: { [currency: string]: number };
     total_supply: number;
-    ath: { [key: string]: number };
-    atl: { [key: string]: number };
-    high_24h: { [key: string]: number };
-    low_24h: { [key: string]: number };
+    ath: { [currency: string]: number };
+    atl: { [currency: string]: number };
+    high_24h: { [currency: string]: number };
+    low_24h: { [currency: string]: number };
 }
 
 export interface CoinData {
@@ -148,7 +148,10 @@ const fetchCoinMarketData = async (coinIds: string[]): Promise<CoinMarketData[]>
 export function useCoinData(coinId: string | undefined) {
     return useQuery({
         queryKey: ["coin", coinId],
-        queryFn: () => fetchCoinById(coinId!),
+        queryFn: () => {
+            if (!coinId) throw new Error("coinId is required");
+            return fetchCoinById(coinId);
+        },
         enabled: !!coinId,
         staleTime: 60 * 1000, // 1 minute
     });
@@ -169,7 +172,10 @@ export function useCoinMarketChart(
 ) {
     return useQuery({
         queryKey: ["chart", coinId, days, interval],
-        queryFn: () => fetchCoinMarketChart(coinId!, days, interval),
+        queryFn: () => {
+            if (!coinId) throw new Error("coinId is required");
+            return fetchCoinMarketChart(coinId, days, interval);
+        },
         enabled: !!coinId,
         staleTime: 30 * 1000, // 30 seconds for chart data
     });

@@ -2,7 +2,7 @@
 
 import type { ChartData } from "chart.js";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LineChart } from "@/components/ui/line-chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,17 @@ interface Coin {
 const MarketSummary = () => {
   const [categoryId, setCategoryId] = useState("smart-contract-platform");
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
+
+  // Helper for keyboard navigation
+  const handleKeyPress = useCallback(
+    (callback: () => void) => (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
+      }
+    },
+    []
+  );
 
   // Fetch coins by category
   const { data: coins = [] } = useCoinsByCategory(categoryId);
@@ -126,16 +137,21 @@ const MarketSummary = () => {
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-3">
                 {coins.map((item: Coin) => (
                   <Card
+                    aria-label={`Select ${item.name} to view chart`}
+                    aria-pressed={item.id === (selectedCoin || coins[0]?.id)}
                     className={`w-full cursor-pointer border-0 ${item.id === (selectedCoin || coins[0]?.id) ? "bg-secondary/50 shadow-sm" : ""}`}
                     key={item.id}
                     onClick={() => {
                       setSelectedCoin(item.id);
                     }}
+                    onKeyDown={handleKeyPress(() => setSelectedCoin(item.id))}
+                    role="button"
+                    tabIndex={0}
                   >
                     <CardHeader className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Image
-                          alt={item.name}
+                          alt={`${item.name} logo`}
                           height={20}
                           src={item.image}
                           style={{ height: "auto" }}
@@ -155,6 +171,9 @@ const MarketSummary = () => {
                         <p
                           className={`${item.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
                         >
+                          <span aria-hidden="true">
+                            {item.price_change_percentage_24h > 0 ? "▲" : "▼"}
+                          </span>{" "}
                           {item.price_change_percentage_24h.toFixed(2)}%
                         </p>
                       </div>

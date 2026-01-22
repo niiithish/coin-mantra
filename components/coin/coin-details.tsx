@@ -10,7 +10,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 
@@ -88,15 +88,17 @@ const CoinHeader = ({ coinData }: { coinData: CoinData }) => {
 };
 
 const CoinDescription = ({
-  name,
   descriptionText,
   expanded,
+  name,
+  onKeyPress,
   onToggle,
 }: {
   name: string;
   descriptionText: string;
   expanded: boolean;
   onToggle: () => void;
+  onKeyPress?: (e: React.KeyboardEvent) => void;
 }) => {
   const truncatedDescription =
     descriptionText.length > 150
@@ -115,8 +117,10 @@ const CoinDescription = ({
       </p>
       {descriptionText.length > 150 && (
         <button
+          aria-expanded={expanded}
           className="text-primary text-xs hover:underline"
           onClick={onToggle}
+          onKeyDown={onKeyPress}
           type="button"
         >
           {expanded ? "Show less" : "Read more"}
@@ -130,10 +134,12 @@ const CoinContractAddress = ({
   contract_address,
   copied,
   onCopy,
+  onKeyPress,
 }: {
   contract_address: string;
   copied: boolean;
   onCopy: () => void;
+  onKeyPress?: (e: React.KeyboardEvent) => void;
 }) => (
   <div className="space-y-2">
     <h3 className="font-medium text-muted-foreground text-sm">
@@ -144,8 +150,10 @@ const CoinContractAddress = ({
         {truncateAddress(contract_address)}
       </code>
       <button
+        aria-label={copied ? "Copied!" : "Copy contract address"}
         className="cursor-pointer rounded-md p-1.5 transition-colors hover:bg-muted"
         onClick={onCopy}
+        onKeyDown={onKeyPress}
         title="Copy address"
         type="button"
       >
@@ -236,6 +244,17 @@ const CoinDetails = ({ coinData }: CoinDetailsProps) => {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  // Helper for keyboard navigation
+  const handleKeyPress = useCallback(
+    (callback: () => void) => (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
+      }
+    },
+    []
+  );
+
   if (!coinData) {
     return <EmptyCard />;
   }
@@ -244,10 +263,30 @@ const CoinDetails = ({ coinData }: CoinDetailsProps) => {
 
   const descriptionText = description?.en || "";
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      // Fallback for older browsers or when clipboard API is not available
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackError) {
+        console.error("Fallback copy failed:", fallbackError);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -260,6 +299,7 @@ const CoinDetails = ({ coinData }: CoinDetailsProps) => {
           descriptionText={descriptionText}
           expanded={expanded}
           name={name}
+          onKeyPress={handleKeyPress(() => setExpanded(!expanded))}
           onToggle={() => setExpanded(!expanded)}
         />
         {contract_address && (
@@ -267,6 +307,7 @@ const CoinDetails = ({ coinData }: CoinDetailsProps) => {
             contract_address={contract_address}
             copied={copied}
             onCopy={() => copyToClipboard(contract_address)}
+            onKeyPress={handleKeyPress(() => copyToClipboard(contract_address))}
           />
         )}
         {categories && categories.length > 0 && (

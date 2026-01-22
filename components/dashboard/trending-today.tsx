@@ -46,7 +46,7 @@ const TrendingToday = () => {
                         <Link href={`/coin/${coin.item.slug}`}>
                           <div className="flex flex-row items-center gap-2">
                             <Image
-                              alt={coin.item.name}
+                              alt={`${coin.item.name} logo`}
                               className="flex-shrink-0 rounded-full"
                               height={24}
                               src={coin.item.small}
@@ -68,11 +68,16 @@ const TrendingToday = () => {
                       <TableCell
                         className={`align-center ${coin.item.data.price_change_percentage_24h.usd > 0 ? "text-green-500" : "text-red-500"}`}
                       >
+                        <span aria-hidden="true">
+                          {coin.item.data.price_change_percentage_24h.usd > 0
+                            ? "▲"
+                            : "▼"}
+                        </span>{" "}
                         {coin.item.data.price_change_percentage_24h.usd.toFixed(2)}%
                       </TableCell>
                       <TableCell className="align-center">
                         <Image
-                          alt={coin.item.name}
+                          alt={`24-hour price chart for ${coin.item.name}`}
                           className="rounded-full"
                           height={120}
                           src={coin.item.data.sparkline}

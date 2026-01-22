@@ -4,7 +4,7 @@ import { Search01Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useCoinMarketData } from "@/hooks/use-coins";
+import { useCoinSearch } from "@/hooks/use-coin-search";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { Badge } from "../ui/badge";
 
@@ -52,111 +53,71 @@ const Watchlist = () => {
   const router = useRouter();
   const { watchlist: watchlistItems, addCoin, removeCoin } = useWatchlist();
 
+  // Helper for keyboard navigation
+  const handleKeyPress = useCallback(
+    (callback: () => void) => (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
+      }
+    },
+    []
+  );
+
   // Fetch coin market data for all watchlist items
   const coinIds = watchlistItems.map((item) => item.coinId);
   const { data: coinMarketData = [], isLoading: coinsLoading } = useCoinMarketData(coinIds);
 
-  // Map the market data to the expected format
-  const coins: CoinData[] = coinMarketData.map((coin) => ({
-    id: coin.id,
-    symbol: coin.symbol,
-    name: coin.name,
-    image: coin.image,
-    market_data: {
-      current_price: { usd: coin.current_price },
-      price_change_24h: coin.current_price * (coin.price_change_percentage_24h / 100),
-      price_change_percentage_24h: coin.price_change_percentage_24h,
-    },
-  }));
+  // Map the market data to the expected format (memoized)
+  const coins: CoinData[] = useMemo(
+    () =>
+      coinMarketData.map((coin) => ({
+        id: coin.id,
+        symbol: coin.symbol,
+        name: coin.name,
+        image: coin.image,
+        market_data: {
+          current_price: { usd: coin.current_price },
+          price_change_24h: coin.current_price * (coin.price_change_percentage_24h / 100),
+          price_change_percentage_24h: coin.price_change_percentage_24h,
+        },
+      })),
+    [coinMarketData]
+  );
 
   const getImageUrl = (coin: CoinData): string => {
     return coin.image || "";
   };
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newCoinId, setNewCoinId] = useState("");
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Debounced search function
-  const searchCoins = useCallback(
-    async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsSearching(true);
-      try {
-        const response = await fetch(
-          `/api/coingecko?endpoint=/search&query=${encodeURIComponent(query)}`
-        );
-
-        if (!response.ok) {
-          console.error("Search failed:", response.statusText);
-          setSearchResults([]);
-          return;
-        }
-
-        const data: SearchResponse = await response.json();
-        // Filter out coins already in watchlist
-        const filteredCoins = data.coins.filter(
-          (coin) => !watchlistItems.some((item) => item.coinId === coin.id)
-        );
-        setSearchResults(filteredCoins.slice(0, 10)); // Limit to 10 results
-      } catch (error) {
-        console.error("Error searching coins:", error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [watchlistItems]
-  );
-
-  // Handle search input with debounce
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      searchCoins(value);
-    }, 300);
-  };
+  // Use the shared search hook
+  const {
+    searchQuery,
+    searchResults,
+    isSearching,
+    handleSearchChange,
+    clearSearch,
+  } = useCoinSearch({ excludeCoinIds: coinIds });
 
   const handleAddCoin = async (coinId?: string) => {
-    const idToAdd = coinId || newCoinId;
-    if (!idToAdd.trim()) {
+    if (!coinId?.trim()) {
       return;
     }
 
-    const success = await addCoin(idToAdd.toLowerCase());
+    const success = await addCoin(coinId.toLowerCase());
     if (success) {
-      handleDialogClose();
+      setDialogOpen(false);
+      clearSearch();
     }
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setNewCoinId("");
-    setSearchQuery("");
-    setSearchResults([]);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
     if (open) {
       setDialogOpen(true);
     } else {
-      handleDialogClose();
+      setDialogOpen(false);
+      clearSearch();
     }
   };
 
@@ -174,7 +135,7 @@ const Watchlist = () => {
       </div>
       <Card className="min-h-0 flex-1 content-start items-start gap-4 overflow-auto p-4">
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {coinsLoading && watchlistItems.length > 0 ? (
+          {coinsLoading ? (
             <div className="col-span-1 flex items-center justify-center py-8 sm:col-span-2 lg:col-span-3">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
@@ -199,22 +160,28 @@ const Watchlist = () => {
                     <div className="flex gap-2">
                       <div className="rounded-full">
                         <HugeiconsIcon
+                          aria-label={`Remove ${coin.name} from watchlist`}
                           className="cursor-pointer"
                           color="#63a401"
                           fill="#63a401"
                           icon={StarIcon}
                           onClick={() => handleRemoveCoin(coin.id)}
+                          onKeyDown={handleKeyPress(() => handleRemoveCoin(coin.id))}
+                          role="button"
                           size={18}
+                          tabIndex={0}
                         />
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <button
+                      aria-label={`View details for ${coin.name}`}
                       className="cursor-pointer text-left font-regular text-foreground/80 text-xs hover:text-primary"
                       onClick={() => {
                         router.push(`/coin/${coin.id}`);
                       }}
+                      onKeyDown={handleKeyPress(() => router.push(`/coin/${coin.id}`))}
                       type="button"
                     >
                       {coin.name}
@@ -229,6 +196,11 @@ const Watchlist = () => {
                       <div
                         className={`flex items-center gap-1.5 font-medium text-xs ${coin.market_data.price_change_percentage_24h > 0 ? "text-green-500" : "text-red-500"}`}
                       >
+                        <span aria-hidden="true">
+                          {coin.market_data.price_change_percentage_24h > 0
+                            ? "▲"
+                            : "▼"}
+                        </span>
                         <span>
                           {coin.market_data.price_change_percentage_24h > 0
                             ? "+"
@@ -307,16 +279,20 @@ const Watchlist = () => {
 
                 {/* Search Results */}
                 {searchResults.length > 0 && (
-                  <div className="max-h-64 gap-2 overflow-y-auto rounded-sm">
+                  <div className="max-h-64 gap-2 overflow-y-auto rounded-sm" role="listbox">
                     {searchResults.map((coin) => (
                       <Card
+                        aria-label={`Add ${coin.name} (${coin.symbol}) to watchlist`}
                         className="cursor-pointer rounded-none"
                         key={coin.id}
                         onClick={() => handleAddCoin(coin.id)}
+                        onKeyDown={handleKeyPress(() => handleAddCoin(coin.id))}
+                        role="option"
+                        tabIndex={0}
                       >
                         <CardContent className="flex gap-4">
                           <Image
-                            alt={coin.name}
+                            alt={`${coin.name} logo`}
                             className="rounded-full"
                             height={24}
                             src={coin.large}
